@@ -1,0 +1,451 @@
+{% extends 'gym/base.html' %} {% load static %} {% get_media_prefix as MEDIA_URL
+%} {% block title %}Entrenadores | Gimnasio ITCJ{% endblock %} 
+{% block content%}
+<link rel="stylesheet" href="{% static 'styles/entrenadores.css' %}" />
+<div class="container mt-5">
+  <!-- Alert Container independiente -->
+  <div class="card shadow-lg border-0">
+    <div class="card-header trainers-hero text-center">
+      <h1>Entrenadores del Gimnasio del ITCJ</h1>
+      <p>Conoce a nuestro equipo de profesionales.</p>
+    </div>
+    <div id="alertContainer"></div>
+    <div class="card-body">
+      {% if request.session.usuario_admin %}
+      <div class="text-start mb-4">
+        <button
+          class="btn btn-success"
+          data-bs-toggle="modal"
+          data-bs-target="#modalAgregarEntrenador"
+        >
+          Agregar entrenador
+        </button>
+      </div>
+      <!-- MODAL PARA AGREGAR -->
+      <div
+        class="modal fade"
+        id="modalAgregarEntrenador"
+        tabindex="-1"
+        aria-hidden="true"
+      >
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h5>Agregar Entrenador</h5>
+              <button class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formAgregarEntrenador" enctype="multipart/form-data">
+              {% csrf_token %}
+              <div class="modal-body">
+                <div class="mb-3">
+                  <label class="fw-bold">Nombres</label>
+                  <input name="nombres" class="form-control" required />
+                </div>
+                <div class="mb-3">
+                  <label class="fw-bold">Apellidos</label>
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <input
+                        name="apellidoP"
+                        placeholder="Apellido paterno"
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <input
+                        name="apellidoM"
+                        placeholder="Apellido materno"
+                        class="form-control"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <label class="fw-bold">Descripción</label>
+                  <textarea
+                    name="descripcion"
+                    class="form-control"
+                    rows="3"
+                  ></textarea>
+                </div>
+                <div class="mb-3">
+                  <label class="fw-bold">Imagen</label>
+                  <input
+                    type="file"
+                    name="img"
+                    accept="image/*"
+                    class="form-control"
+                  />
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button
+                  id="btnGuardarEntrenador"
+                  class="btn btn-success"
+                  type="button"
+                >
+                  Guardar
+                </button>
+                <button class="btn btn-secondary" data-bs-dismiss="modal">
+                  Cancelar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+      {% endif %}
+      <p class="fs-5 text-center mb-4">
+        Nuestro equipo está capacitado para orientarte según tus objetivos.
+      </p>
+      <!-- GRID DE ENTRENADORES -->
+      <div class="row g-4" id="entrenadoresGrid">
+        {% for e in entrenadores %}
+        <div class="col-md-4">
+          <div class="card trainer-card h-100">
+            <img
+              class="trainer-img"
+              src="/media/fotosEntrenadores/{{ e.url_img }}"
+              alt="{{ e.Nombres }}"
+            />
+            <div class="card-body trainer-body">
+              {% if request.session.usuario_admin %}
+              <form
+                method="POST"
+                action="{% url 'editar_entrenador' e.id_entrenador %}"
+                enctype="multipart/form-data"
+              >
+                {% csrf_token %}
+                <div class="mb-2 text-start">
+                  <label class="fw-bold">Nombres</label>
+                  <input
+                    type="text"
+                    name="nombres"
+                    class="form-control"
+                    value="{{ e.Nombres }}"
+                    required
+                  />
+                </div>
+                <div class="mb-2">
+                  <label class="fw-bold">Apellidos</label>
+                  <div class="row g-2">
+                    <div class="col-md-6">
+                      <input
+                        type="text"
+                        name="apellidoP"
+                        class="form-control"
+                        value="{{ e.ApellidoP }}"
+                        required
+                        placeholder="A. Paterno"
+                      />
+                    </div>
+                    <div class="col-md-6">
+                      <input
+                        type="text"
+                        name="apellidoM"
+                        class="form-control"
+                        value="{{ e.ApellidoM }}"
+                        required
+                        placeholder="A. Materno"
+                      />
+                    </div>
+                  </div>
+                </div>
+                <div class="mb-2 text-start">
+                  <label class="fw-bold">Descripción</label>
+                  <textarea
+                    name="descripcion"
+                    class="form-control"
+                    rows="3"
+                    style="resize: none"
+                  >
+{{ e.descrpicion }}</textarea
+                  >
+                </div>
+                <div class="mb-2 text-start">
+                  <label class="fw-bold">Actualizar imagen</label>
+                  <input
+                    type="file"
+                    name="img"
+                    accept="image/*"
+                    class="form-control"
+                  />
+                </div>
+                <div class="d-flex justify-content-center gap-2 mt-2">
+                  <button
+                    class="btn btn-success btn-sm"
+                    type="button"
+                    onclick="guardarEntrenador({{ e.id_entrenador }}, this)"
+                  >
+                    Guardar
+                  </button>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    type="button"
+                    onclick="confirmarEliminar({{ e.id_entrenador }})"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </form>
+              {% else %}
+              <h5 class="fw-bold">
+                {{ e.Nombres }} {{ e.ApellidoP }} {{ e.ApellidoM }}
+              </h5>
+              <p class="trainer-bio mb-2">{{ e.descrpicion }}</p>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CONFIRMAR ELIMINACIÓN -->
+<div class="modal fade" id="modalEliminarEntrenador" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Eliminar entrenador</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p class="mb-0">¿Seguro que deseas eliminar este entrenador?</p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button id="btnConfirmarEliminar" class="btn btn-danger">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  const btnGuardar = document.getElementById("btnGuardarEntrenador");
+let entrenadorAEliminar = null;
+let modalEliminar = null;
+
+document.addEventListener("DOMContentLoaded", () => {
+    modalEliminar = new bootstrap.Modal(
+        document.getElementById("modalEliminarEntrenador")
+    );
+});
+  btnGuardar.addEventListener("click", async () => {
+    const form = document.getElementById("formAgregarEntrenador");
+    const formData = new FormData(form);
+
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("modalAgregarEntrenador")
+    );
+
+    const resp = await fetch("{% url 'agregar_entrenador' %}", {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await resp.json();
+
+    if (data.ok) {
+      showAlert("Entrenador agregado correctamente", "success");
+      actualizarEntrenadores();
+      modal.hide();
+    } else {
+      showAlert("Error: " + data.error, "danger");
+    }
+  });
+
+  // ==========================
+  // Mostrar alertas Bootstrap
+  // ==========================
+  function showAlert(message, type = "info") {
+    document.getElementById("alertContainer").innerHTML = `
+            <div class="alert alert-${type} alert-dismissible fade show mt-3" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+  }
+
+  // ====================================
+  // Volver a renderizar los entrenadores
+  // ====================================
+  async function actualizarEntrenadores() {
+    const resp = await fetch("{% url 'lista_entrenadores_json' %}");
+    const data = await resp.json();
+
+    const grid = document.getElementById("entrenadoresGrid");
+    grid.innerHTML = ""; // limpiar
+
+    data.entrenadores.forEach((e) => {
+      grid.innerHTML += `
+        <div class="col-md-4">
+            <div class="card trainer-card h-100">
+                <img class="trainer-img"
+                     src="${data.MEDIA_URL}fotosEntrenadores/${e.url_img}"
+                     alt="${e.Nombres}">
+                <div class="card-body trainer-body">
+                    
+                    ${
+                      data.usuario_admin
+                        ? `
+                        <form method="POST"
+                              action="/editar_entrenador/${e.id_entrenador}/"
+                              enctype="multipart/form-data">
+
+                            <input type="hidden" name="csrfmiddlewaretoken" value="${getCookie(
+                              "csrftoken"
+                            )}"/>
+
+                            <div class="mb-2 text-start">
+                                <label class="fw-bold">Nombres</label>
+                                <input type="text" name="nombres" class="form-control"
+                                       value="${e.Nombres}" required>
+                            </div>
+
+                            <div class="mb-2">
+                                <label class="fw-bold">Apellidos</label>
+                                <div class="row g-2">
+                                    <div class="col-md-6">
+                                        <input type="text" name="apellidoP" class="form-control"
+                                               value="${
+                                                 e.ApellidoP
+                                               }" required placeholder="A. Paterno">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <input type="text" name="apellidoM" class="form-control"
+                                               value="${
+                                                 e.ApellidoM
+                                               }" required placeholder="A. Materno">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-2 text-start">
+                                <label class="fw-bold">Descripción</label>
+                                <textarea name="descripcion" class="form-control"
+                                          rows="3" style="resize:none;">${
+                                            e.descripcion
+                                          }</textarea>
+                            </div>
+
+                            <div class="mb-2 text-start">
+                                <label class="fw-bold">Actualizar imagen</label>
+                                <input type="file" name="img" accept="image/*"
+                                       class="form-control">
+                            </div>
+
+
+
+                            <div class="d-flex justify-content-center gap-2 mt-2">
+                                <button class="btn btn-success btn-sm"
+        type="button"
+        onclick="guardarEntrenador(${e.id_entrenador}, this)">
+    Guardar
+</button>
+
+
+                                <button class="btn btn-danger btn-sm" type="button"
+                                        onclick="confirmarEliminar(${
+                                          e.id_entrenador
+                                        })">
+                                    Eliminar
+                                </button>
+                            </div>
+
+                        </form>
+                    `
+                        : `
+                        <h5 class="fw-bold">${e.Nombres} ${e.ApellidoP} ${e.ApellidoM}</h5>
+                        <p class="trainer-bio mb-2">${e.descripcion}</p>
+                    `
+                    }
+                </div>
+            </div>
+        </div>`;
+    });
+  }
+
+  // ====================================
+  // Confirmar → Eliminar con Fetch
+  // ====================================
+
+
+function confirmarEliminar(id) {
+    entrenadorAEliminar = id;
+    modalEliminar.show();
+}
+
+document.getElementById("btnConfirmarEliminar").addEventListener("click", () => {
+    if (!entrenadorAEliminar) return;
+
+    fetch(`/entrenadores/eliminar/${entrenadorAEliminar}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+        },
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        showAlert(data.message, data.success ? "success" : "danger");
+        if (data.success) actualizarEntrenadores();
+        modalEliminar.hide();
+        entrenadorAEliminar = null;
+    })
+    .catch(() => {
+        showAlert("Error al eliminar", "danger");
+        modalEliminar.hide();
+    });
+});
+
+  // ====================================
+  // Obtener token CSRF
+  // ====================================
+  function getCookie(name) {
+    let cookieValue = null;
+
+    if (document.cookie) {
+      const cookies = document.cookie.split(";");
+
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        }
+      }
+    }
+    return cookieValue;
+  }
+  function guardarEntrenador(id, btn) {
+    const form = btn.closest("form");
+    const formData = new FormData(form);
+
+    fetch(`/editar_entrenador/${id}/`, {
+        method: "POST",
+        headers: {
+            "X-CSRFToken": getCookie("csrftoken"),
+        },
+        body: formData
+    })
+    .then(resp => resp.json())
+    .then(data => {
+        if (data.success) {
+    showAlert(data.message, "success");
+    actualizarEntrenadores();
+} else {
+    showAlert(data.message, "danger");
+}
+    })
+    .catch(err => {
+        showAlert("Error de red", "danger");
+        console.error(err);
+    });
+}
+
+</script>
+<!--<script src="{% static 'js/entrenadores.js' %}"></script>-->
+{% endblock %}

@@ -1,0 +1,707 @@
+{% extends 'gym/base.html' %} {% load static %} {% block title %}Inicio |
+Gimnasio{% endblock %} {% block content %}
+<style>
+#carouselGimnasio .carousel-inner img {
+  width: 100%;
+  height: 70vh;
+  object-fit: contain;
+  background-color: #000;
+}
+  .noticia-img {
+    width: 100%;
+    max-height: 300px;
+    object-fit: contain; 
+  }
+  .carrusel-item {
+  height: 200px;              /* 🔑 todas del mismo alto */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background-color: #f8f9fa;
+}
+
+/* Imagen dentro del contenedor */
+.carrusel-item img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;          /* 🔑 recorta sin deformar */
+}
+</style>
+<!-- ====== Contenido principal ====== -->
+<div class="content">
+   <h2 class="fw-bold text-center mb-4">Gimnasio de pesas del ITCJ</h2>
+  {% if request.session.usuario_admin %}
+<button
+  class="btn btn-warning mb-4"
+  data-bs-toggle="modal"
+  data-bs-target="#modalCarrusel"
+>
+  Administrar carrusel
+</button>
+{% endif %}
+
+  <!-- Carrusel de imágenes -->
+<div
+  id="carouselGimnasio"
+  class="carousel slide mb-5"
+  data-bs-ride="carousel"
+>
+  <div class="carousel-indicators"></div>
+  <div class="carousel-inner rounded shadow"></div>
+
+  <button class="carousel-control-prev" type="button"
+    data-bs-target="#carouselGimnasio" data-bs-slide="prev">
+    <span class="carousel-control-prev-icon"></span>
+  </button>
+
+  <button class="carousel-control-next" type="button"
+    data-bs-target="#carouselGimnasio" data-bs-slide="next">
+    <span class="carousel-control-next-icon"></span>
+  </button>
+</div>
+
+
+<div class="container mb-5">
+  <h2 class="fw-bold text-center mb-4">Noticias del Gimnasio</h2>
+  {% if request.session.usuario_admin %}
+  <div class="container mb-4">
+    <div
+      class="alert d-flex justify-content-between align-items-center shadow-sm"
+    >
+      <div class="d-flex gap-2">
+        <button
+          class="btn btn-success btn-sm"
+          data-bs-toggle="modal"
+          data-bs-target="#modalAgregarNoticia"
+        >
+          Agregar noticia
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+  <div id="alertaGlobalNoticias"></div>
+  <div id="contenedorNoticias"></div>
+</div>
+
+<div
+  class="modal fade"
+  id="modalAgregarNoticia"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Agregar noticia</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="alertaAgregarNoticia"></div>
+        <form id="formAgregarNoticia" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label class="form-label">Título</label>
+            <input type="text" name="titulo" class="form-control" required />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea
+              name="descripcion"
+              class="form-control"
+              rows="4"
+              required
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Imagen</label>
+            <input
+              type="file"
+              name="imagen"
+              class="form-control"
+              accept="image/*"
+            />
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-success" id="btnGuardarNoticia">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div
+  class="modal fade"
+  id="modalEditarNoticia"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Editar noticia</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="alertaEditarNoticia"></div>
+        <form id="formEditarNoticia" enctype="multipart/form-data">
+          {% csrf_token %}
+          <input type="hidden" name="id_noticia" id="edit_id_noticia" />
+
+          <div class="mb-3">
+            <label class="form-label">Título</label>
+            <input
+              type="text"
+              name="titulo"
+              id="edit_titulo"
+              class="form-control"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Descripción</label>
+            <textarea
+              name="descripcion"
+              id="edit_descripcion"
+              class="form-control"
+              rows="4"
+              required
+            ></textarea>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Imagen (opcional)</label>
+            <input
+              type="file"
+              name="imagen"
+              id="edit_imagen"
+              class="form-control"
+              accept="image/*"
+            />
+
+            <small class="text-muted">
+              Si no seleccionas imagen, se conservará la actual.
+            </small>
+          </div>
+        </form>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-primary" id="btnActualizarNoticia">
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalEliminarNoticia" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-danger text-white">
+        <h5 class="modal-title">Eliminar noticia</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="alertaEliminarNoticia"></div>
+        <p>¿Estás seguro de que deseas eliminar esta noticia?</p>
+        <p class="text-muted mb-0">Esta acción no se puede deshacer.</p>
+        <input type="hidden" id="idNoticiaEliminar">
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger" id="btnConfirmarEliminarNoticia">
+          Sí, eliminar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalCarrusel">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <div class="modal-content">
+
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title">Administrador del carrusel</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+
+        <!-- SUBIR IMÁGENES -->
+        <div class="mb-4">
+          <h6 class="fw-bold">Subir nuevas imágenes</h6>
+          <input
+            type="file"
+            id="inputSubirCarrusel"
+            class="form-control"
+            multiple
+            accept="image/*"
+          >
+          <small class="text-muted">
+            Las imágenes se guardarán al presionar “Guardar cambios”.
+          </small>
+        </div>
+
+        <hr>
+
+        <!-- LISTA DE IMÁGENES -->
+        <h6 class="fw-bold mb-3">Imágenes actuales</h6>
+        <div id="gridCarrusel" class="row"></div>
+
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-success" id="btnGuardarCarrusel">
+          Guardar cambios
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+    </div>
+  </div>
+</div>
+
+<script>
+
+     const ES_ADMIN = {{ request.session.usuario_admin|yesno:"true,false" }};
+     let imagenesEliminar = new Set();
+let imagenesNuevas = [];
+      async function cargarNoticias() {
+      try {
+        const response = await fetch("{% url 'listar_noticias' %}");
+        const data = await response.json();
+
+        const contenedor = document.getElementById("contenedorNoticias");
+        contenedor.innerHTML = "";
+
+        if (!data.success || data.noticias.length === 0) {
+          contenedor.innerHTML = `
+            <p class="text-center text-muted">No hay noticias registradas.</p>
+          `;
+          return;
+        }
+
+  data.noticias.forEach(noticia => {
+    contenedor.innerHTML += `
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="row g-0">
+
+          <!-- TEXTO -->
+          <div class="col-md-7">
+            <div class="card-body d-flex flex-column h-100">
+              <h5 class="card-title fw-bold">${noticia.titulo}</h5>
+
+              <p class="text-muted mb-2">
+                <small>Publicado el ${noticia.fecha_publicacion}</small>
+              </p>
+
+              <p class="card-text">
+                ${noticia.descripcion}
+              </p>
+            </div>
+          </div>
+
+          <!-- IMAGEN -->
+          <div class="col-md-5 d-flex align-items-center justify-content-center p-2">
+            ${noticia.imagen ? `
+              <img
+                src="/media/${noticia.imagen}"
+                class="img-fluid noticia-img"
+                alt="Imagen noticia"
+              />` : ""}
+          </div>
+
+        </div>
+
+        ${ES_ADMIN ? `
+        <div class="card-footer bg-light d-flex justify-content-end gap-2">
+          <button
+            class="btn btn-outline-primary btn-sm"
+            onclick="editarNoticia(${noticia.id_noticia})"
+          >
+            Editar
+          </button>
+          <button
+            class="btn btn-outline-danger btn-sm"
+            onclick="eliminarNoticia(${noticia.id_noticia})"
+          >
+            Eliminar
+          </button>
+        </div>` : ""}
+      </div>
+    `;
+  });
+
+
+      } catch (error) {
+        console.error("Error al cargar noticias:", error);
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", cargarNoticias);
+    document.addEventListener("DOMContentLoaded", cargarCarrusel);
+    const btnGuardarNoticia = document.getElementById("btnGuardarNoticia");
+
+ btnGuardarNoticia.addEventListener("click", async () => {
+  const form = document.getElementById("formAgregarNoticia");
+
+  document.getElementById("alertaAgregarNoticia").innerHTML = "";
+
+  const titulo = form.titulo.value.trim();
+  const descripcion = form.descripcion.value.trim();
+
+  if (!tieneAlfanumerico(titulo)) {
+    mostrarAlertaModalAgregar(
+      "El título debe contener al menos un carácter alfanumérico"
+    );
+    return;
+  }
+
+  if (!tieneAlfanumerico(descripcion)) {
+    mostrarAlertaModalAgregar(
+      "La descripción debe contener al menos un carácter alfanumérico"
+    );
+    return;
+  }
+
+  const formData = new FormData(form);
+
+  try {
+    const response = await fetch("{% url 'guardar_noticia' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("modalAgregarNoticia")
+      );
+      modal.hide();
+      form.reset();
+      mostrarAlertaGlobal("Noticia guardada correctamente", "success");
+      cargarNoticias();
+
+    } else {
+      mostrarAlertaModalAgregar(data.error || "Error al guardar la noticia");
+    }
+
+  } catch (error) {
+    console.error(error);
+    mostrarAlertaModalAgregar("Error inesperado en la petición");
+  }
+});
+
+  function resetFileInput(inputId) {
+    const oldInput = document.getElementById(inputId);
+    if (!oldInput) return;
+
+    const newInput = oldInput.cloneNode(true);
+    oldInput.parentNode.replaceChild(newInput, oldInput);
+  }
+
+  async function editarNoticia(id) {
+    try {
+      const form = document.getElementById("formEditarNoticia");
+
+      form.reset();
+      resetFileInput("edit_imagen");
+      document.getElementById("alertaEditarNoticia").innerHTML = "";
+      const resp = await fetch(`/noticias/${id}/`);
+      const data = await resp.json();
+      if (!data.success) {
+        mostrarAlertaModalEditar(data.error || "Error al cargar noticia");
+        return;
+      }
+      document.getElementById("edit_id_noticia").value = data.noticia.id;
+      document.getElementById("edit_titulo").value = data.noticia.titulo;
+      document.getElementById("edit_descripcion").value = data.noticia.descripcion;
+      const modal = new bootstrap.Modal(
+        document.getElementById("modalEditarNoticia")
+      );
+      modal.show();
+    } catch (error) {
+      console.error(error);
+      mostrarAlertaModalEditar("Error inesperado al cargar la noticia");
+    }
+  }
+
+  document.getElementById("btnActualizarNoticia").addEventListener("click", async () => {
+const form = document.getElementById("formEditarNoticia");
+
+    const titulo = form.titulo.value.trim();
+    const descripcion = form.descripcion.value.trim();
+    if (!tieneAlfanumerico(titulo)) {
+      mostrarAlertaModalEditar(
+        "El título debe contener al menos un carácter alfanumérico"
+      );
+      return;
+    }
+    if (!tieneAlfanumerico(descripcion)) {
+      mostrarAlertaModalEditar(
+        "La descripción debe contener al menos un carácter alfanumérico"
+      );
+      return;
+    }
+    const formData = new FormData(form);
+      try {
+        const resp = await fetch("{% url 'actualizar_noticia' %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": formData.get("csrfmiddlewaretoken"),
+          },
+          body: formData,
+        });
+        const data = await resp.json();
+
+   if (data.success) {
+    const modal = bootstrap.Modal.getInstance(
+      document.getElementById("modalEditarNoticia")
+    );
+    modal.hide();
+    cargarNoticias();
+    mostrarAlertaGlobal("Noticia actualizada correctamente", "success");
+
+  } else {
+    mostrarAlertaModalEditar(data.error || "Error al actualizar la noticia");
+  }
+      } catch (error) {
+  mostrarAlertaModalEditar(data.error || "Error al actualizar la noticia");
+      }
+    });
+
+  function eliminarNoticia(id) {
+    document.getElementById("idNoticiaEliminar").value = id;
+    document.getElementById("alertaEliminarNoticia").innerHTML = "";
+        let modalEliminar = new bootstrap.Modal(
+    document.getElementById("modalEliminarNoticia")
+  );
+    modalEliminar.show();
+  }
+  document
+    .getElementById("btnConfirmarEliminarNoticia")
+    .addEventListener("click", async () => {
+
+      const id = document.getElementById("idNoticiaEliminar").value;
+
+      try {
+        const resp = await fetch("{% url 'eliminar_noticia' %}", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": "{{ csrf_token }}"
+          },
+          body: JSON.stringify({ id_noticia: id })
+        });
+
+        const data = await resp.json();
+
+        if (data.success) {
+           const modalEliminar = bootstrap.Modal.getInstance(
+        document.getElementById("modalEliminarNoticia")
+      );
+          modalEliminar.hide();
+          cargarNoticias();
+          mostrarAlertaGlobal("Noticia eliminada correctamente", "success");
+        } else {
+          mostrarAlertaEliminar(data.error || "Error al eliminar la noticia");
+        }
+
+      } catch (error) {
+        mostrarAlertaEliminar("Error inesperado al eliminar");
+      }
+    });
+
+  function mostrarAlertaGlobal(mensaje, tipo = "success") {
+    const contenedor = document.getElementById("alertaGlobalNoticias");
+
+    contenedor.innerHTML = `
+      <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+        ${mensaje}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+
+    setTimeout(() => {
+      const alerta = contenedor.querySelector(".alert");
+      if (alerta) alerta.classList.remove("show");
+    }, 4000);
+  }
+
+  function mostrarAlertaModalEditar(mensaje, tipo = "danger") {
+    const contenedor = document.getElementById("alertaEditarNoticia");
+    contenedor.innerHTML = `
+      <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+        ${mensaje}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+  }
+  function mostrarAlertaModalAgregar(mensaje, tipo = "danger") {
+  const contenedor = document.getElementById("alertaAgregarNoticia");
+  contenedor.innerHTML = `
+    <div class="alert alert-${tipo} alert-dismissible fade show" role="alert">
+      ${mensaje}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+}
+  function tieneAlfanumerico(texto) {
+  return /[a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/.test(texto);
+}
+  function mostrarAlertaEliminar(mensaje, tipo = "danger") {
+    document.getElementById("alertaEliminarNoticia").innerHTML = `
+      <div class="alert alert-${tipo} alert-dismissible fade show">
+        ${mensaje}
+        <button class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+  }
+
+let carruselSeleccion = new Set();
+
+async function cargarAdministradorCarrusel() {
+  imagenesEliminar.clear();
+  imagenesNuevas = [];
+
+  document.getElementById("inputSubirCarrusel").value = "";
+
+  const resp = await fetch("{% url 'listar_fotos_carrusel' %}");
+  const data = await resp.json();
+
+  const cont = document.getElementById("gridCarrusel");
+  cont.innerHTML = "";
+
+data.imagenes.forEach(img => {
+  cont.innerHTML += `
+    <div class="col-md-4 mb-3 text-center" data-img="${img}">
+      <div class="carrusel-item shadow mb-2">
+        <img src="/media/${img}" alt="Imagen carrusel">
+      </div>
+
+      <button class="btn btn-outline-danger btn-sm w-100"
+        onclick="marcarEliminar('${img}', this)">
+        Eliminar
+      </button>
+    </div>
+  `;
+});
+}
+
+function marcarEliminar(img, btn) {
+  imagenesEliminar.add(img);
+  const card = btn.closest("[data-img]");
+  card.classList.add("opacity-50");
+  btn.disabled = true;
+  btn.textContent = "Se eliminará";
+}
+
+document.getElementById("modalCarrusel")
+  .addEventListener("shown.bs.modal", cargarAdministradorCarrusel);
+
+async function cargarCarrusel() {
+  const resp = await fetch("{% url 'listar_fotos_carrusel' %}");
+  const data = await resp.json();
+
+  const indicators = document.querySelector(".carousel-indicators");
+  const inner = document.querySelector(".carousel-inner");
+
+  indicators.innerHTML = "";
+  inner.innerHTML = "";
+
+  data.imagenes.forEach((img, i) => {
+    indicators.innerHTML += `
+      <button type="button"
+        data-bs-target="#carouselGimnasio"
+        data-bs-slide-to="${i}"
+        class="${i === 0 ? "active" : ""}">
+      </button>
+    `;
+
+    inner.innerHTML += `
+      <div class="carousel-item ${i === 0 ? "active" : ""}">
+        <img src="/media/${img}" class="d-block w-100">
+      </div>
+    `;
+  });
+}
+
+
+
+document.getElementById("modalCarrusel")
+  .addEventListener("shown.bs.modal", cargarAdministradorCarrusel);
+
+document.getElementById("btnGuardarCarrusel")
+  .addEventListener("click", async () => {
+
+    const formData = new FormData();
+
+    imagenesNuevas.forEach(img => {
+      formData.append("imagenes_nuevas", img);
+    });
+
+    formData.append(
+      "imagenes_eliminar",
+      JSON.stringify([...imagenesEliminar])
+    );
+
+    const resp = await fetch("{% url 'guardar_carrusel' %}", {
+      method: "POST",
+      headers: { "X-CSRFToken": "{{ csrf_token }}" },
+      body: formData
+    });
+
+    const data = await resp.json();
+
+    if (data.success) {
+      cargarCarrusel();
+      bootstrap.Modal.getInstance(
+        document.getElementById("modalCarrusel")
+      ).hide();
+    }
+});
+document.getElementById("inputSubirCarrusel")
+  .addEventListener("change", (e) => {
+    imagenesNuevas = [...e.target.files];
+  });
+</script>
+
+{% endblock %}

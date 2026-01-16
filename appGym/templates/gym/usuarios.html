@@ -1,0 +1,802 @@
+{% extends 'gym/base.html' %} {% load static bootstrap5 %} {% block title%}
+Gestión de Usuarios{% endblock %} {% block content %}
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+      <div class="card shadow-lg border-0">
+        <div class="card-header fondo text-white text-center">
+          <h4 class="mb-0">Gestión de Usuarios</h4>
+        </div>
+
+        <div class="card-body">
+          <!-- Menú principal -->
+          <div class="d-flex justify-content-around mb-4">
+            <button
+              class="btn btn-success"
+              id="btn-agregar"
+              onclick="ocultarEditar()"
+            >
+              Agregar
+            </button>
+            <button
+              class="btn btn-primary"
+              id="btn-buscar"
+              onclick="ocultarEditar()"
+            >
+              Buscar
+            </button>
+            <button
+              class="btn btn-warning text-white"
+              id="btn-editar"
+              onclick="mostrarEditar()"
+            >
+              Editar
+            </button>
+            <button
+              class="btn btn-danger"
+              id="btn-eliminar"
+              onclick="ocultarEditar()"
+            >
+              Eliminar
+            </button>
+          </div>
+
+          <!-- SECCIÓN AGREGAR -->
+          <div id="seccion-agregar" class="d-none">
+            <h5 class="mb-3 text-success">Agregar Usuario</h5>
+            <div id="alerta-mensaje"></div>
+
+            <form
+              method="POST"
+              enctype="multipart/form-data"
+              id="form-agregar"
+              action="{% url 'gestion_usuarios' %}"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="accion" value="agregar" />
+
+              <!-- Datos -->
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label for="nombre" class="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="nombre"
+                    name="nombre"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="apellido_paterno" class="form-label"
+                    >Apellido Paterno</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="apellido_paterno"
+                    name="apellido_paterno"
+                    required
+                  />
+                </div>
+                <div class="col-md-4 mb-3">
+                  <label for="apellido_materno" class="form-label"
+                    >Apellido Materno</label
+                  >
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="apellido_materno"
+                    name="apellido_materno"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Tipo -->
+              <div class="mb-3">
+                <label for="tipo_usuario" class="form-label"
+                  >Tipo de Usuario</label
+                >
+                <select
+                  class="form-select"
+                  id="tipo_usuario"
+                  name="tipo_usuario"
+                  required
+                >
+                  <option value="">Seleccione tipo</option>
+                  <option value="empleado">Empleado</option>
+                  <option value="alumno">Alumno</option>
+                  <option value="representativo">Representativo</option>
+                  <option value="externo">Externo</option>
+                </select>
+              </div>
+
+              <!-- Campos dinámicos -->
+              <div id="campos-extra"></div>
+
+              <!-- Foto -->
+              <div class="mb-3">
+                <label for="foto" class="form-label">Foto (opcional)</label>
+                <input
+                  type="file"
+                  class="form-control"
+                  id="foto"
+                  name="foto"
+                  accept="image/*"
+                />
+              </div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-success w-100">
+                  Guardar Usuario
+                </button>
+              </div>
+            </form>
+          </div>
+
+          <!-- SECCIÓN BUSCAR / ELIMINAR -->
+          <div id="seccion-buscar">
+            <h5 class="mb-3 text-primary" id="titulo-busqueda">
+              Buscar Usuario
+            </h5>
+
+            <form
+              id="form-buscar"
+              method="GET"
+              action="{% url 'gestion_usuarios' %}"
+            >
+              <div class="row">
+                <div class="col-md-6 mb-3">
+                  <input
+                    type="number"
+                    class="form-control"
+                    id="buscar_id"
+                    name="id_usuario"
+                    placeholder="Buscar por ID"
+                  />
+                </div>
+                <div class="col-md-6 mb-3">
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="buscar_nombre"
+                    name="nombre"
+                    placeholder="Buscar por nombre"
+                  />
+                </div>
+              </div>
+              <div class="text-center">
+                <button type="submit" class="btn btn-primary w-100">
+                  Buscar
+                </button>
+              </div>
+            </form>
+
+            <ul
+              id="resultados"
+              class="list-group mt-4"
+              style="display: none"
+            ></ul>
+
+            <!-- Detalle usuario -->
+            <div id="detalle-usuario" class="mt-4 d-none">
+              <div class="card">
+                <div class="card-body d-flex align-items-center">
+                  <img
+                    id="detalle-foto"
+                    src=""
+                    alt="Foto"
+                    class="rounded me-3 border"
+                    style="width: 80px; height: 80px; object-fit: cover"
+                  />
+                  <div>
+                    <h6 id="detalle-nombre" class="mb-1"></h6>
+                    <p id="detalle-id" class="text-muted mb-1"></p>
+                    <p id="detalle-tipo" class="text-muted mb-0"></p>
+                  </div>
+                </div>
+
+                <!-- Botón eliminar -->
+                <div id="boton-eliminar" class="card-footer text-center d-none">
+                  <form
+                    method="POST"
+                    id="form-eliminar"
+                    action="{% url 'gestion_usuarios' %}"
+                  >
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="eliminar" />
+                    <input type="hidden" name="id_usuario" id="id_eliminar" />
+                    <button type="submit" class="btn btn-danger w-100">
+                      Eliminar Usuario
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECCIÓN EDITAR -->
+          <div id="seccion-editar" class="d-none mt-5">
+            <h5 class="mb-3 text-warning">Editar Usuario</h5>
+            <div id="alerta-editar"></div>
+
+            <form
+              method="POST"
+              id="form-editar-usuario"
+              enctype="multipart/form-data"
+              action="{% url 'gestion_usuarios' %}"
+            >
+              {% csrf_token %}
+              <input type="hidden" name="accion" value="editar" />
+
+              <!-- ID (no editable) -->
+              <div class="mb-3">
+                <label class="form-label">ID Usuario</label>
+                <input
+                  type="text"
+                  class="form-control"
+                  id="editar_id"
+                  name="id_usuario"
+                  readonly
+                />
+              </div>
+
+              <!-- Nombre -->
+              <div class="row">
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Nombre</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="editar_nombre"
+                    name="nombre"
+                    required
+                  />
+                </div>
+
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Apellido Paterno</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="editar_apellido_p"
+                    name="apellido_paterno"
+                    required
+                  />
+                </div>
+
+                <div class="col-md-4 mb-3">
+                  <label class="form-label">Apellido Materno</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="editar_apellido_m"
+                    name="apellido_materno"
+                    required
+                  />
+                </div>
+              </div>
+
+              <!-- Tipo de Usuario -->
+              <div class="mb-3">
+                <label class="form-label">Tipo de Usuario</label>
+                <select
+                  class="form-select"
+                  id="editar_tipo_usuario"
+                  name="tipo_usuario"
+                  required
+                >
+                  <option value="">Seleccione tipo</option>
+                  <option value="empleado">Empleado</option>
+                  <option value="alumno">Alumno</option>
+                  <option value="representativo">Representativo</option>
+                  <option value="externo">Externo</option>
+                </select>
+              </div>
+
+              <!-- Campos extra dinámicos -->
+              <div id="editar-campos-extra"></div>
+
+              <div class="mb-3">
+                <label for="editar_foto" class="form-label"
+                  >Foto (opcional)</label
+                >
+                <input
+                  type="file"
+                  class="form-control"
+                  id="editar_foto"
+                  name="foto"
+                  accept="image/*"
+                />
+              </div>
+
+              <!-- Campos extra -->
+              <div id="editar-campos-extra"></div>
+
+              <div class="text-center">
+                <button type="submit" class="btn btn-warning text-white w-100">
+                  Guardar Cambios
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+        <!-- /card-body -->
+      </div>
+    </div>
+  </div>
+</div>
+<!-- Modal Confirmar Eliminación -->
+<div
+  class="modal fade"
+  id="modalEliminar"
+  tabindex="-1"
+  aria-labelledby="modalEliminarLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEliminarLabel">
+          Confirmar Eliminación
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Cerrar"
+        ></button>
+      </div>
+      <div class="modal-body">¿Deseas eliminar este usuario?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" class="btn btn-danger" id="confirmarEliminar">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+
+  const csrftoken = getCookie("csrftoken");
+  document.addEventListener("DOMContentLoaded", () => {
+    const seccionAgregar = document.getElementById("seccion-agregar");
+    const seccionBuscar = document.getElementById("seccion-buscar");
+    const detalleUsuario = document.getElementById("detalle-usuario");
+    const resultados = document.getElementById("resultados");
+    const tituloBusqueda = document.getElementById("titulo-busqueda");
+
+    const btnAgregar = document.getElementById("btn-agregar");
+    const btnBuscar = document.getElementById("btn-buscar");
+    const btnEditar = document.getElementById("btn-editar");
+    const btnEliminar = document.getElementById("btn-eliminar");
+
+    const formAgregar = document.getElementById("form-agregar");
+    const formBuscar = document.getElementById("form-buscar");
+    const alerta = document.getElementById("alerta-mensaje");
+
+    const tipoUsuario = document.getElementById("tipo_usuario");
+    const camposExtra = document.getElementById("campos-extra");
+    let modoEliminar = false;
+
+    const formEliminar = document.getElementById("form-eliminar");
+    const btnConfirmarEliminar = document.getElementById("confirmarEliminar");
+    const modalEliminar = new bootstrap.Modal(
+      document.getElementById("modalEliminar")
+    );
+
+    const editarTipoUsuario = document.getElementById("editar_tipo_usuario");
+    const editarCamposExtra = document.getElementById("editar-campos-extra");
+
+    // Variables para mantener los valores
+    let valorNoControl = "";
+    let valorEquipo = "";
+
+    editarTipoUsuario.addEventListener("change", () => {
+      const tipo = editarTipoUsuario.value;
+
+      // Guardar los valores actuales si existen
+      const noControlInput = editarCamposExtra.querySelector(
+        'input[name="no_control"]'
+      );
+      const equipoInput = editarCamposExtra.querySelector(
+        'input[name="equipo"]'
+      );
+      if (noControlInput) valorNoControl = noControlInput.value;
+      if (equipoInput) valorEquipo = equipoInput.value;
+
+      // Limpiar los campos extra
+      editarCamposExtra.innerHTML = "";
+
+      // Crear campos según tipo
+      if (tipo === "alumno") {
+        editarCamposExtra.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Número de Control</label>
+        <input type="text" class="form-control" name="no_control" value="${valorNoControl}" required>
+      </div>`;
+      }
+if (tipo === "empleado") {
+        editarCamposExtra.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Número de Control</label>
+        <input type="text" class="form-control" name="numero_empleado" value="${valorNoControl}" required>
+      </div>`;
+      }
+      if (tipo === "representativo") {
+        editarCamposExtra.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Número de Control</label>
+        <input type="text" class="form-control" name="no_control" value="${valorNoControl}" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Equipo</label>
+        <input type="text" class="form-control" name="equipo" value="${valorEquipo}" required>
+      </div>`;
+      }
+    });
+
+    function mostrarSeccion(s) {
+      [seccionAgregar, seccionBuscar].forEach((sec) =>
+        sec.classList.add("d-none")
+      );
+      s.classList.remove("d-none");
+      detalleUsuario.classList.add("d-none");
+      resultados.style.display = "none";
+      modoEliminar = false; // desactivar modo eliminar al cambiar de sección
+    }
+
+    mostrarSeccion(seccionBuscar);
+
+    btnAgregar.addEventListener("click", () => mostrarSeccion(seccionAgregar));
+    btnBuscar.addEventListener("click", () => {
+      tituloBusqueda.textContent = "Buscar Usuario";
+      mostrarSeccion(seccionBuscar);
+    });
+    btnBuscar.addEventListener("click", () => {
+      tituloBusqueda.textContent = "Buscar Usuario";
+      tituloBusqueda.className = "mb-3 text-primary";
+      mostrarSeccion(seccionBuscar);
+    });
+
+    btnEditar.addEventListener("click", () => {
+      tituloBusqueda.textContent = "Editar Usuario";
+      tituloBusqueda.className = "mb-3 text-warning";
+      mostrarSeccion(seccionBuscar);
+    });
+
+    btnEliminar.addEventListener("click", () => {
+      tituloBusqueda.textContent = "Eliminar Usuario";
+      tituloBusqueda.className = "mb-3 text-danger";
+      mostrarSeccion(seccionBuscar);
+      modoEliminar = true;
+    });
+    tipoUsuario.addEventListener("change", () => {
+      const tipo = tipoUsuario.value;
+      camposExtra.innerHTML = "";
+
+      if (tipo === "alumno") {
+        camposExtra.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Número de Control</label>
+        <input type="text" class="form-control" name="no_control" required>
+      </div>`;
+      }
+      if (tipo === "empleado") {
+        camposExtra.innerHTML = `
+    <div class="mb-3">
+      <label class="form-label">Número de Empleado</label>
+      <input type="text" class="form-control" name="numero_empleado" required>
+    </div>`;
+      }
+      if (tipo === "representativo") {
+        camposExtra.innerHTML = `
+      <div class="mb-3">
+        <label class="form-label">Número de Control</label>
+        <input type="text" class="form-control" name="no_control" required>
+      </div>
+      <div class="mb-3">
+        <label class="form-label">Equipo</label>
+        <input type="text" class="form-control" name="equipo" required>
+      </div>`;
+      }
+    });
+
+    // BUSCAR USUARIO
+    formBuscar.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const queryNombre = document.getElementById("buscar_nombre").value.trim();
+      const queryId = document.getElementById("buscar_id").value.trim();
+
+      resultados.innerHTML = "";
+      resultados.style.display = "block";
+      detalleUsuario.classList.add("d-none");
+
+      if (!queryNombre && !queryId) {
+        resultados.innerHTML = `
+        <li class="list-group-item text-center text-danger">
+           Ingresa un ID o un Nombre.
+        </li>`;
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `${formBuscar.action}?id_usuario=${queryId}&nombre=${queryNombre}`,
+          { headers: { "X-Requested-With": "XMLHttpRequest" } }
+        );
+
+        const data = await response.json();
+
+        if (!data.success) {
+          resultados.innerHTML = `
+          <li class="list-group-item text-center text-danger">
+             ${data.error}
+          </li>`;
+          return;
+        }
+
+        if (data.resultados.length === 0) {
+          resultados.innerHTML = `
+          <li class="list-group-item text-center text-muted">
+            Sin resultados
+          </li>`;
+          return;
+        }
+
+        // LISTAR RESULTADOS
+        data.resultados.forEach((u) => {
+          const li = document.createElement("li");
+          li.className = "list-group-item list-group-item-action";
+          li.textContent = `ID: ${u.id_usuario} - ${u.nombres} ${u.apellido_paterno} (${u.tipo_usuario})`;
+
+          li.onclick = () => mostrarDetalle(u);
+
+          resultados.appendChild(li);
+        });
+      } catch (error) {
+        resultados.innerHTML = `
+        <li class="list-group-item text-center text-danger">
+           Error al conectar con el servidor.
+        </li>`;
+      }
+    });
+
+    // ------ FUNCIÓN PARA DETALLE ------
+    function mostrarDetalle(u) {
+      valorNoControl = u.no_control || "";
+      valorEquipo = u.equipo || "";
+      const botonEliminar = document.getElementById("boton-eliminar");
+
+      // --- LLENAR DETALLE ---
+      detalleUsuario.classList.remove("d-none");
+
+      document.getElementById(
+        "detalle-nombre"
+      ).textContent = `${u.nombres} ${u.apellido_paterno} ${u.apellido_materno}`;
+
+      document.getElementById("detalle-id").textContent = "ID: " + u.id_usuario;
+      document.getElementById("detalle-tipo").textContent =
+        "Tipo: " + u.tipo_usuario;
+
+      document.getElementById("detalle-foto").src = u.foto
+  ? `/media/${u.foto}`
+  : "/media/fotos_usuarios/default.jpg";
+
+      // --- MODO ELIMINAR ---
+      if (modoEliminar) {
+        botonEliminar.classList.remove("d-none");
+        document.getElementById("id_eliminar").value = u.id_usuario;
+      } else {
+        botonEliminar.classList.add("d-none");
+      }
+
+      // --- FORMULARIO EDITAR SOLO SI ESTAMOS EN MODO EDITAR ---
+      const seccionEditar = document.getElementById("seccion-editar");
+
+      if (!modoEliminar && tituloBusqueda.textContent === "Editar Usuario") {
+        seccionEditar.classList.remove("d-none");
+
+        // Llenar formulario editar
+        document.getElementById("editar_id").value = u.id_usuario;
+        document.getElementById("editar_nombre").value = u.nombres;
+        document.getElementById("editar_apellido_p").value = u.apellido_paterno;
+        document.getElementById("editar_apellido_m").value = u.apellido_materno;
+        document.getElementById("editar_tipo_usuario").value = u.tipo_usuario;
+
+        const extra = document.getElementById("editar-campos-extra");
+        extra.innerHTML = "";
+
+        if (u.tipo_usuario === "alumno") {
+          extra.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Número de Control</label>
+                    <input type="text" class="form-control" name="no_control" value="${u.no_control}" required>
+                </div>`;
+        }
+        if (u.tipo_usuario === "empleado") {
+    extra.innerHTML = `
+        <div class="mb-3">
+            <label class="form-label">Número de Empleado</label>
+            <input type="text" class="form-control" name="no_control" value="${u.no_empleado}" required>
+        </div>`;
+}
+
+        if (u.tipo_usuario === "representativo") {
+          extra.innerHTML = `
+                <div class="mb-3">
+                    <label class="form-label">Número de Control</label>
+                    <input type="text" class="form-control" name="no_control" value="${u.no_control}" required>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Equipo</label>
+                    <input type="text" class="form-control" name="equipo" value="${u.equipo}" required>
+                </div>`;
+        }
+      } else {
+        // No mostrar el formulario editar
+        seccionEditar.classList.add("d-none");
+      }
+    }
+
+    // ------- AGREGAR USUARIO -------
+    formAgregar.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const formData = new FormData(formAgregar);
+
+      try {
+        const response = await fetch(formAgregar.action, {
+          method: "POST",
+          body: formData,
+          headers: { "X-Requested-With": "XMLHttpRequest" },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          alerta.innerHTML = `
+  <div class="alert alert-success">${data.mensaje}</div>`;
+          formAgregar.reset();
+          camposExtra.innerHTML = "";
+        } else {
+          alerta.innerHTML = `
+          <div class="alert alert-danger">${data.error}</div>`;
+        }
+      } catch {
+        alerta.innerHTML = `
+        <div class="alert alert-danger">
+          Error inesperado en el servidor.
+        </div>`;
+      }
+    });
+
+    // --- SUBMIT PARA EDITAR ---
+    document
+      .getElementById("form-editar-usuario")
+      .addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        let form = document.getElementById("form-editar-usuario");
+        let alerta = document.getElementById("alerta-editar");
+        let formData = new FormData(form);
+
+        try {
+          let response = await fetch("{% url 'gestion_usuarios' %}", {
+            method: "POST",
+            body: formData,
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+            },
+          });
+
+          let data = await response.json();
+
+          if (data.success) {
+            alerta.innerHTML = `
+                <div class="alert alert-success">
+                    ${data.mensaje}
+                </div>
+            `;
+              if (data.foto) {
+    const img = document.getElementById("detalle-foto");
+    img.src = data.foto + "?t=" + new Date().getTime(); // evita cache
+  }
+
+          } else {
+            alerta.innerHTML = `
+                <div class="alert alert-danger">
+                    ${data.error}
+                </div>
+            `;
+          }
+        } catch (error) {
+          alerta.innerHTML = `
+            <div class="alert alert-danger">
+                Error inesperado en el servidor.
+            </div>
+        `;
+        }
+      });
+
+    formEliminar.addEventListener("submit", (e) => {
+      e.preventDefault();
+      // Mostrar el modal en vez del confirm()
+      modalEliminar.show();
+    });
+
+    // Evento del botón de confirmar en el modal
+    btnConfirmarEliminar.addEventListener("click", async () => {
+      const idUsuario = document.getElementById("id_eliminar").value;
+      const alertaEliminar = document.getElementById("alerta-mensaje");
+
+      try {
+        const formData = new FormData();
+        formData.append("id_usuario", idUsuario);
+
+        const response = await fetch("{% url 'eliminar_usuario' %}", {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": csrftoken,
+          },
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          // Ocultar detalle y resultados
+          document.getElementById("detalle-usuario").classList.add("d-none");
+          resultados.style.display = "none";
+          modoEliminar = false;
+          document
+            .getElementById("form-buscar")
+            .dispatchEvent(new Event("submit"));
+        } else {
+          alertaEliminar.innerHTML = `
+        <div class="alert alert-danger">
+          ${data.error}
+        </div>`;
+        }
+      } catch (error) {
+        alertaEliminar.innerHTML = `
+      <div class="alert alert-danger">
+        Error inesperado al eliminar el usuario.
+      </div>`;
+        console.error(error);
+      } finally {
+        modalEliminar.hide(); // cerrar modal después de la acción
+      }
+    });
+  });
+  // Oculta la sección editar
+  function ocultarEditar() {
+    document.getElementById("seccion-editar").style.display = "none";
+  }
+
+  // Muestra la sección editar
+  function mostrarEditar() {
+    document.getElementById("seccion-editar").style.display = "block";
+  }
+</script>
+
+{% endblock %}

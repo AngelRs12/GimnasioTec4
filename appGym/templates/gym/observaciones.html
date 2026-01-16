@@ -1,0 +1,291 @@
+{% extends 'gym/base.html' %} {% load static bootstrap5 %}
+ {% block title%}Gestión de Observaciones{% endblock %} {% block content %}
+<div class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+
+      <!-- FORMULARIO PARA AGREGAR OBSERVACIONES -->
+      <div class="card shadow">
+        <div class="card-header fondo text-white text-center">
+          <h4 class="mb-0">Observaciones</h4>
+        </div>
+        <div class="card-body">
+          <div id="alert-container"></div>
+
+          <form method="POST" id="observacion-form">
+            {% csrf_token %}
+
+            <!-- Título -->
+            <div class="mb-3">
+              <label for="titulo" class="form-label">Título</label>
+              <input type="text" class="form-control" id="titulo" name="titulo"
+                placeholder="Ingrese el título de la observación" required />
+            </div>
+
+            <!-- Descripción -->
+            <div class="mb-3">
+              <label for="descripcion" class="form-label">Descripción</label>
+              <textarea class="form-control" id="descripcion" name="descripcion" rows="4"
+                placeholder="Escriba la descripción" required></textarea>
+            </div>
+
+            <!-- Fecha -->
+            <div class="mb-3">
+              <label for="fecha_publicacion" class="form-label">Fecha de publicación</label>
+              <input type="date" class="form-control" id="fecha_publicacion" name="fecha_publicacion" required />
+            </div>
+
+            <!-- Botón -->
+            <div class="text-center">
+              <button type="submit" class="btn fondo w-100 text-white">
+                Guardar Observación
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- LISTA DE OBSERVACIONES -->
+      <div class="card mt-4 shadow">
+        <div class="card-header bg-secondary text-white text-center">
+          <h5 class="mb-0">Observaciones Recientes</h5>
+        </div>
+
+        <div class="card-body">
+          <div id="alert-editar-container" class="mb-3"></div>
+          <div class="accordion" id="accordionObservaciones">
+            <p class="text-center text-muted">Cargando observaciones...</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación de Eliminación -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar Eliminación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        ¿Está seguro que desea eliminar esta observación?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="btnConfirmDelete">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- SCRIPT PARA LISTAR OBSERVACIONES -->
+<script>
+  function getCookie(name) {
+  let cookieValue = null;
+  if (document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let cookie of cookies) {
+      cookie = cookie.trim();
+      if (cookie.startsWith(name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+const csrftoken = getCookie("csrftoken");
+
+document.addEventListener("DOMContentLoaded", async () => {
+
+  const accordion = document.getElementById("accordionObservaciones");
+
+  // === FUNCIÓN PARA CARGAR OBSERVACIONES ===
+  const cargarObservaciones = async () => {
+    try {
+      const response = await fetch("/listar_observaciones/");
+      const data = await response.json();
+
+      if (!data || data.length === 0) {
+        accordion.innerHTML = `<p class="text-center text-muted">No hay observaciones registradas.</p>`;
+        return;
+      }
+
+      accordion.innerHTML = "";
+
+      data.forEach((obs, index) => {
+        const itemId = `obs-${index}`;
+
+        accordion.innerHTML += `
+          <div class="accordion-item" data-id="${obs.id_observacion}">
+            <h2 class="accordion-header" id="heading-${itemId}">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
+                data-bs-target="#collapse-${itemId}" aria-expanded="false"
+                aria-controls="collapse-${itemId}">
+                ${obs.id_observacion} - ${obs.titulo}
+              </button>
+            </h2>
+
+            <div id="collapse-${itemId}" class="accordion-collapse collapse"
+              aria-labelledby="heading-${itemId}" data-bs-parent="#accordionObservaciones">
+              <div class="accordion-body">
+                <textarea class="form-control mb-2 editable-descripcion" rows="3" style="resize: none;">${obs.descripcion}</textarea>
+                <div class="d-flex justify-content-end gap-2">
+                  <button class="btn btn-success btn-sm btn-guardar">Guardar</button>
+                  <button class="btn btn-danger btn-sm btn-eliminar">Eliminar</button>
+                </div>
+                <small class="text-muted">Publicado el: ${obs.fecha_publicacion}</small>
+              </div>
+            </div>
+          </div>
+        `;
+      });
+
+      // Agregar eventos de los botones
+      agregarEventosBotones();
+
+    } catch (error) {
+      accordion.innerHTML = `<p class="text-danger text-center">Error al cargar observaciones.</p>`;
+      console.error("Error:", error);
+    }
+  };
+
+  // Cargar observaciones al iniciar
+  await cargarObservaciones();
+
+  // === GUARDAR NUEVA OBSERVACIÓN ===
+  document.getElementById("observacion-form").addEventListener("submit", async function (e) {
+    e.preventDefault();
+
+    const alertContainer = document.getElementById("alert-container");
+    alertContainer.innerHTML = "";
+
+    const formData = new FormData(this);
+
+    const response = await fetch("/guardar_observacion/", {
+      method: "POST",
+      body: formData
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      alertContainer.innerHTML = `
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+          ${data.mensaje}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+      this.reset();
+      await cargarObservaciones();
+    } else {
+      alertContainer.innerHTML = `
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+          ${data.error}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      `;
+    }
+  });
+
+  // === FUNCIONES DE BOTONES EDITAR Y ELIMINAR ===
+ function agregarEventosBotones() {
+  const alertEditarContainer = document.getElementById("alert-editar-container");
+
+  document.querySelectorAll(".btn-guardar").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      const parent = e.target.closest(".accordion-item");
+      const id = parent.dataset.id;
+      const descripcion = parent.querySelector(".editable-descripcion").value;
+
+      try {
+        const formData = new FormData();
+        formData.append("id_observacion", id);
+        formData.append("descripcion", descripcion);
+
+        const response = await fetch("/editar_observacion/", {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+            "X-CSRFToken": csrftoken
+          },
+        });
+
+        const data = await response.json();
+
+        // Mostrar mensaje en contenedor
+        if (data.success) {
+          alertEditarContainer.innerHTML = `
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+              ${data.mensaje}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          `;
+        } else {
+          alertEditarContainer.innerHTML = `
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+              ${data.error}
+              <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    });
+  });
+
+let idEliminar = null; // guardará el ID de la observación a eliminar
+const confirmDeleteModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'));
+const btnConfirmDelete = document.getElementById('btnConfirmDelete');
+
+document.querySelectorAll(".btn-eliminar").forEach(btn => {
+  btn.addEventListener("click", (e) => {
+    const parent = e.target.closest(".accordion-item");
+    idEliminar = parent.dataset.id; // guardar ID
+    confirmDeleteModal.show(); // abrir modal
+  });
+});
+btnConfirmDelete.addEventListener("click", async () => {
+  if (!idEliminar) return;
+
+  try {
+    const formData = new FormData();
+    formData.append("id_observacion", idEliminar);
+
+    const response = await fetch("/eliminar_observacion/", {
+      method: "POST",
+      body: formData,
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "X-CSRFToken": csrftoken
+      },
+    });
+
+    const data = await response.json();
+
+    // Mostrar mensaje dentro del modal antes de cerrarlo
+    const modalBody = document.querySelector("#confirmDeleteModal .modal-body");
+    if (data.success) {
+      confirmDeleteModal.hide();
+      await cargarObservaciones(); // recargar lista
+      alertEditarContainer.innerHTML = `<div class="alert alert-success mb-0">${data.mensaje}</div>`;
+    } else {
+      modalBody.innerHTML = `<div class="alert alert-danger mb-0">${data.error}</div>`;
+    }
+
+  } catch (error) {
+    console.error(error);
+  }
+});
+}
+
+});
+</script>
+
+{% endblock %}

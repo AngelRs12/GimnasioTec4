@@ -1,0 +1,308 @@
+{% extends 'gym/base.html' %} {% load static %}
+{% include "reportes/modal_vista_previa.html" %}
+ {% block title %}Reportes |
+Gimnasio{% endblock %} {% block content %}
+<link rel="stylesheet" href="{% static 'styles/reportes.css' %}" />
+
+<div class="container mt-5">
+  <div class="card report-card">
+    <!-- HEADER -->
+    <div class="card-header report-header text-center py-4">
+      <h3 class="mb-1 fw-bold">
+        <i class="fa-solid fa-chart-column me-2"></i>Reportes del Sistema
+      </h3>
+      <p class="mb-0 opacity-75">
+        Exporta información del gimnasio en formato Excel
+      </p>
+    </div>
+
+    <!-- BODY -->
+    <div class="card-body">
+      <div class="row g-4">
+        <!-- Usuarios -->
+        <div class="col-md-6 col-lg-3">
+          <div class="report-item h-100 text-center">
+            <div class="report-icon">
+              <i class="fa-solid fa-users"></i>
+            </div>
+            <h5 class="fw-bold">Usuarios</h5>
+            <p class="text-muted small">
+              Listado completo de usuarios registrados.
+            </p>
+
+            <div class="d-flex justify-content-center gap-2">
+              <a
+                href="#"
+                class="btn report-btn btn-sm btn-sm btn-preview"
+                data-tipo="usuarios"
+              >
+                Vista previa
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entradas -->
+        <div class="col-md-6 col-lg-3">
+          <div class="report-item h-100 text-center">
+            <div class="report-icon">
+              <i class="fa-solid fa-door-open"></i>
+            </div>
+            <h5 class="fw-bold">Entradas</h5>
+            <p class="text-muted small">
+              Historial de ingresos al<br />
+              gimnasio.
+            </p>
+            
+            <div class="">
+              <a
+                href="#"
+                class="btn report-btn btn-sm btn-sm btn-preview"
+                data-tipo="ingresos"
+                data-fechas="true"
+              >
+                Vista previa
+              </a>
+            </div>
+            <br/>
+            <div class="row g-1">
+              <div class="col-6">
+                <label>Desde:</label>
+              </div>
+              <div class="col-6">
+                <label>Hasta:</label>
+              </div>
+            </div>
+            <br />
+            <div class="row g-1">
+              <div class="col-6">
+                <input
+                  type="date"
+                  class="form-control form-control-sm fecha-inicio"
+                />
+              </div>
+              <div class="col-6">
+                <input
+                  type="date"
+                  class="form-control form-control-sm fecha-fin"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Membresías -->
+        <div class="col-md-6 col-lg-3">
+          <div class="report-item h-100 text-center">
+            <div class="report-icon">
+              <i class="fa-solid fa-id-card"></i>
+            </div>
+            <h5 class="fw-bold">Membresías</h5>
+            <p class="text-muted small">
+              Usuarios con membresía <br />registrada.
+            </p>
+
+            <div class="">
+              <a
+                href="#"
+                class="btn report-btn btn-sm btn-sm btn-preview"
+                data-tipo="membresias"
+                data-fechas="true"
+              >
+                Vista previa
+              </a>
+            </div>
+            <br />
+            <div class="row g-1">
+              <div class="col-6">
+                <label>Desde:</label>
+              </div>
+              <div class="col-6">
+                <label>Hasta:</label>
+              </div>
+            </div>
+            <br />
+            <div class="row g-1">
+              <div class="col-6">
+                <input
+                  type="date"
+                  class="form-control form-control-sm fecha-inicio"
+                />
+              </div>
+              <div class="col-6">
+                <input
+                  type="date"
+                  class="form-control form-control-sm fecha-fin"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Observaciones -->
+        <div class="col-md-6 col-lg-3">
+          <div class="report-item h-100 text-center">
+            <div class="report-icon">
+              <i class="fa-solid fa-clipboard-list"></i>
+            </div>
+            <h5 class="fw-bold">Observaciones</h5>
+            <p class="text-muted small">
+              Observaciones registradas en el <br />sistema.
+            </p>
+
+            <div class="">
+              <a
+                href="#"
+                class="btn report-btn btn-sm btn-sm btn-preview"
+                data-tipo="observaciones"
+                data-fechas="true"
+              >
+                Vista previa
+              </a>
+            </div>
+            <br />
+            
+            <div class="row g-1">
+              <div class="col-6">
+                <label>Desde:</label>
+              </div>
+              <div class="col-6">
+                <label>Hasta:</label>
+              </div>
+            </div>
+            <br>
+            <div class="row g-1">
+              <div class="col-6">
+                <input
+                  type="date"
+                  class="form-control form-control-sm fecha-inicio"
+                />
+              </div>
+              <div class="col-6">
+                <input
+                  type="date"
+                  class="form-control form-control-sm fecha-fin"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalPreview" tabindex="-1">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Vista previa</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+        ></button>
+      </div>
+
+      <div class="modal-body" id="previewContent">
+        <div class="text-center text-muted py-5">Cargando vista previa...</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+  document.body.addEventListener("click", async (e) => {
+if (e.target.id === "btnDescargarExcel") {
+
+  const url = e.target.dataset.url;
+
+  try {
+    const response = await fetch(url);
+    if (!response.ok) throw new Error();
+
+    const blob = await response.blob();
+    const objectUrl = window.URL.createObjectURL(blob);
+
+    // 🔴 LEER EL NOMBRE DESDE EL HEADER
+    let filename = "reporte.xlsx";
+    const disposition = response.headers.get("Content-Disposition");
+
+    if (disposition && disposition.includes("filename=")) {
+      filename = disposition
+        .split("filename=")[1]
+        .replace(/"/g, "")
+        .trim();
+    }
+
+    const a = document.createElement("a");
+    a.href = objectUrl;
+    a.download = filename;   // ✅ NOMBRE CORRECTO
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+
+    window.URL.revokeObjectURL(objectUrl);
+
+    document.getElementById("alertaDescarga").innerHTML = `
+      <div class="alert alert-success alert-dismissible fade show">
+        El archivo Excel se descargó correctamente.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+
+  } catch {
+    document.getElementById("alertaDescarga").innerHTML = `
+      <div class="alert alert-danger alert-dismissible fade show">
+        Error al descargar el archivo Excel.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    `;
+  }
+}
+  });
+});
+  document.querySelectorAll(".btn-preview").forEach((btn) => {
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const tipo = btn.dataset.tipo;
+      const usaFechas = btn.dataset.fechas === "true";
+
+      let params = new URLSearchParams();
+
+      if (usaFechas) {
+        const card = btn.closest(".report-item");
+        const inicio = card.querySelector(".fecha-inicio").value;
+        const fin = card.querySelector(".fecha-fin").value;
+
+        if (inicio) params.append("inicio", inicio);
+        if (fin) params.append("fin", fin);
+      }
+
+      const modal = new bootstrap.Modal(
+        document.getElementById("modalPreview")
+      );
+
+      const content = document.getElementById("previewContent");
+      content.innerHTML = "Cargando vista previa...";
+
+      fetch(`/reportes/preview/${tipo}/?${params.toString()}`, {
+        headers: { "X-Requested-With": "XMLHttpRequest" },
+      })
+        .then((res) => res.text())
+        .then((html) => {
+          content.innerHTML = html;
+
+          // 🔹 construir URL del excel con los mismos filtros
+          let excelParams = new URLSearchParams(params);
+          const excelUrl = `/reporte_${tipo}_excel/?${excelParams.toString()}`;
+
+          modal.show();
+        });
+    });
+  });
+</script>
+
+{% endblock %}

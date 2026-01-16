@@ -1,0 +1,446 @@
+{% extends 'gym/base.html' %} {% load static %} {% block title %}Horario del
+Gimnasio{% endblock %} {% block content %}
+<link rel="stylesheet" href="{% static 'styles/horario.css' %}" />
+<div class="container mt-5">
+  <div class="hero mb-4">
+    <div
+      class="d-flex flex-column flex-md-row align-items-md-center justify-content-between"
+    >
+      <div>
+        <h1 class="fw-bold">Horario y condiciones - Gimnasio de Pesas</h1>
+        <p class="mb-0">
+          Consulta los horarios, requisitos y costos para el uso del gimnasio.
+          Lee atentamente las condiciones para garantizar un uso responsable y
+          seguro de las instalaciones.
+        </p>
+      </div>
+      <div class="mt-3 mt-md-0 text-md-end">
+        <span class="badge badge-accent px-3 py-2"
+          >Atención Semi-personal disponible</span
+        >
+      </div>
+    </div>
+  </div>
+
+ <!-- Horarios -->
+<div id="bloqueHorario"></div>
+
+<!-- Requisitos y Costos -->
+<div class="row g-4">
+  <div class="col-md-6">
+    <div id="bloqueReqComunidad"></div>
+  </div>
+
+  <div class="col-md-6">
+    <div id="bloqueReqEquipos"></div>
+  </div>
+
+  <div class="col-12">
+    <div id="bloqueCostos"></div>
+  </div>
+</div>
+
+
+  <!-- Nota final destacada y acción -->
+  <div class="row mt-4">
+    <div class="col-lg-9">
+      <div class="note shadow-sm">
+        <strong>Nota:</strong> Alumnos y personal ITCJ que no requieran atención
+        semi-personal podrán utilizar el gimnasio en los horarios establecidos
+        sin costo. Para atención semi-personal consultar costos y
+        disponibilidad.
+      </div>
+    </div>
+
+    <div
+      class="col-lg-3 d-flex align-items-center justify-content-lg-end mt-3 mt-lg-0"
+    >
+      <a href="{% url 'index' %}" class="btn btn-primary-gi btn-lg"
+        >Volver al inicio</a
+      >
+    </div>
+  </div>
+</div>
+<div class="modal fade" id="modalEditarBloque">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="tituloModalEditar"></h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <button class="btn btn-success" onclick="agregarFila()">
+         Agregar fila
+        </button>
+        <div id="alertEditarBloque" class="alert alert-danger d-none"></div>
+
+        <div id="contenidoEditarBloque">
+          <!-- Aquí JS inyecta inputs -->
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-success" onclick="guardarBloque()">
+          Guardar cambios
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+   function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie !== "") {
+      const cookies = document.cookie.split(";");
+      for (let cookie of cookies) {
+        cookie = cookie.trim();
+        if (cookie.startsWith(name + "=")) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+  const csrftoken = getCookie("csrftoken");
+let bloqueEditando = null;
+function filaHorario(data = {}) {
+  const div = document.createElement("div");
+  div.className = "row mb-2 fila-editable";
+  div.dataset.estado = data.id ? "original" : "nuevo";
+  if (data.id) div.dataset.id = data.id;
+
+  div.innerHTML = `
+    <div class="col"><input class="form-control campo" value="${data.horario || ""}"></div>
+    <div class="col"><input class="form-control campo" value="${data.usuario || ""}"></div>
+    <div class="col"><input class="form-control campo" value="${data.costoObs || ""}"></div>
+    <div class="col-1 text-center">
+      <button class="btn btn-outline-danger btn-sm" onclick="eliminarFila(this)">✖</button>
+    </div>
+  `;
+  return div;
+}
+async function guardarBloque() {
+  const insertar = [];
+  const actualizar = [];
+  const eliminar = [];
+
+  document.querySelectorAll(".fila-editable").forEach(fila => {
+    const estado = fila.dataset.estado;
+    const campos = fila.querySelectorAll(".campo");
+
+    if (estado === "eliminado") {
+      eliminar.push({ id: fila.dataset.id });
+      return;
+    }
+
+    if (bloqueEditando === "horario") {
+      const obj = {
+        id: fila.dataset.id,
+        horario: campos[0].value,
+        usuario: campos[1].value,
+        costoObs: campos[2].value
+      };
+
+      estado === "nuevo" ? insertar.push(obj) : actualizar.push(obj);
+    }
+
+    if (bloqueEditando === "costos") {
+      insertar.push({
+        tipo_usuario: campos[0].value,
+        costo: campos[1].value
+      });
+    }
+
+    if (bloqueEditando.includes("requisitos")) {
+      insertar.push({ valor: campos[0].value });
+    }
+  });
+
+  const resp = await fetch("{% url 'horario_bloque_guardar' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": csrftoken,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      bloque: bloqueEditando,
+      insertar,
+      actualizar,
+      eliminar
+    })
+  });
+
+  const data = await resp.json();
+  if (data.success) location.reload();
+}
+
+function filaRequisito(data = {}) {
+  const div = document.createElement("div");
+  div.className = "mb-2 fila-editable";
+  div.dataset.estado = data.id ? "original" : "nuevo";
+  if (data.id) div.dataset.id = data.id;
+
+  div.innerHTML = `
+    <div class="d-flex gap-2 align-items-start">
+      <textarea class="form-control campo"
+                rows="2"
+                style="resize:none">${data.valor || ""}</textarea>
+
+      <button class="btn btn-outline-danger btn-sm mt-1"
+              onclick="eliminarFila(this)">
+        ✖
+      </button>
+    </div>
+  `;
+
+  return div;
+}
+
+function filaCosto(data = {}) {
+  const div = document.createElement("div");
+  div.className = "row mb-2 fila-editable";
+  div.dataset.estado = data.id ? "original" : "nuevo";
+  if (data.id) div.dataset.id = data.id;
+
+  div.innerHTML = `
+    <div class="col">
+      <input class="form-control campo"
+             value="${data.tipo_usuario || ""}">
+    </div>
+
+    <div class="col">
+  <input type="number"
+         class="form-control campo"
+         step="0.01"
+         min="0"
+         value="${data.costo || ''}">
+</div>
+
+
+    <div class="col-1 text-center">
+      <button class="btn btn-outline-danger btn-sm"
+              onclick="eliminarFila(this)">
+        ✖
+      </button>
+    </div>
+  `;
+
+  return div;
+}
+
+function eliminarFila(btn) {
+  const fila = btn.closest(".fila-editable");
+
+  if (fila.dataset.estado === "nuevo") {
+    fila.remove();
+  } else {
+    fila.dataset.estado = "eliminado";
+    fila.classList.add("d-none");
+  }
+}
+
+function agregarFila() {
+  const cont = document.getElementById("contenidoEditarBloque");
+
+  if (bloqueEditando === "horario") {
+    cont.appendChild(filaHorario());
+  }
+
+  if (bloqueEditando === "requisitos_comunidad" ||
+      bloqueEditando === "requisitos_equipos") {
+    cont.appendChild(filaRequisito());
+  }
+
+  if (bloqueEditando === "costos") {
+    cont.appendChild(filaCosto());
+  }
+}
+
+async function cargarBloque(bloque) {
+  const resp = await fetch(`/horario_bloque/${bloque}/`);
+  return await resp.json();
+}
+
+async function cargarHorario() {
+  const cont = document.getElementById("bloqueHorario");
+  const data = await cargarBloque("horario");
+
+  let filas = "";
+  data.datos.forEach(h => {
+    filas += `
+      <tr>
+        <td class="fw-semibold">${h.horario}</td>
+        <td>${h.usuario}</td>
+        <td>${h.costoObs}</td>
+      </tr>
+    `;
+  });
+
+  cont.innerHTML = `
+    <div class="card fancy-card mb-4 p-3 shadow-sm">
+      <div class="card-body">
+        <h3 class="fw-bold mb-3">Horario del Gimnasio de Pesas</h3>
+
+        <table class="table table-custom text-center align-middle">
+          <thead>
+            <tr>
+              <th>Horario</th>
+              <th>Usuarios</th>
+              <th>Costo / Observación</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+
+      {% if request.session.usuario_admin %}
+      <div class="text-end mb-2">
+        <button class="btn btn-sm btn-outline-primary"
+                onclick="abrirEditarBloque('horario')">
+          Editar
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  `;
+}
+
+async function cargarRequisitos(bloque, contenedorId, titulo) {
+  const cont = document.getElementById(contenedorId);
+  const data = await cargarBloque(bloque);
+
+  let items = "";
+  data.datos.forEach(r => {
+    items += `<li>${r}</li>`;
+  });
+
+  cont.innerHTML = `
+    <div class="card fancy-card p-3 h-100">
+      <div class="card-body">
+        <h4 class="fw-bold text-primary mb-3">${titulo}</h4>
+        <ul class="fs-5">${items}</ul>
+      </div>
+
+      {% if request.session.usuario_admin %}
+      <div class="text-end mb-2">
+        <button class="btn btn-sm btn-outline-primary"
+                onclick="abrirEditarBloque('${bloque}')">
+          Editar
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  `;
+}
+
+async function cargarCostos() {
+  const cont = document.getElementById("bloqueCostos");
+  const data = await cargarBloque("costos");
+
+  let filas = "";
+  data.datos.forEach(c => {
+    filas += `
+      <tr>
+        <td class="fw-semibold">${c.tipo_usuario}</td>
+        <td>${c.costo}</td>
+      </tr>
+    `;
+  });
+
+  cont.innerHTML = `
+    <div class="card cost-card p-3 shadow-sm">
+      <div class="card-body">
+        <h4 class="fw-bold text-danger mb-3 text-center">
+          Costos — Atención Semi-personal
+        </h4>
+
+        <table class="table table-bordered text-center align-middle">
+          <thead>
+            <tr>
+              <th>Tipo de Usuario</th>
+              <th>Costo</th>
+            </tr>
+          </thead>
+          <tbody>${filas}</tbody>
+        </table>
+      </div>
+
+      {% if request.session.usuario_admin %}
+      <div class="text-end mb-2">
+        <button class="btn btn-sm btn-outline-primary"
+                onclick="abrirEditarBloque('costos')">
+          Editar
+        </button>
+      </div>
+      {% endif %}
+    </div>
+  `;
+}
+
+async function abrirEditarBloque(tipo) {
+  bloqueEditando = tipo;
+
+  document.getElementById("alertEditarBloque").classList.add("d-none");
+  document.getElementById("tituloModalEditar").textContent =
+    `Editar ${tipo.replace("_", " ")}`;
+
+  const data = await cargarBloque(tipo);
+  const cont = document.getElementById("contenidoEditarBloque");
+  cont.innerHTML = "";
+
+  /* ================= HORARIO ================= */
+  if (tipo === "horario") {
+    cont.innerHTML = `
+      <div class="row fw-bold text-center mb-2">
+        <div class="col">Horario</div>
+        <div class="col">Usuarios</div>
+        <div class="col">Costo / Observación</div>
+        <div class="col-1"></div>
+      </div>
+    `;
+
+    data.datos.forEach(f => cont.appendChild(filaHorario(f)));
+  }
+
+if (tipo === "requisitos_comunidad" || tipo === "requisitos_equipos") {
+  data.datos.forEach(r => {
+    cont.appendChild(
+      filaRequisito({ valor: r }) // 👈 aquí la clave
+    );
+  });
+}
+  /* ================= COSTOS ================= */
+  if (tipo === "costos") {
+    cont.innerHTML = `
+      <div class="row fw-bold text-center mb-2">
+        <div class="col">Tipo de Usuario</div>
+        <div class="col">Costo</div>
+        <div class="col-1"></div>
+      </div>
+    `;
+
+    data.datos.forEach(c => cont.appendChild(filaCosto(c)));
+  }
+
+  new bootstrap.Modal(
+    document.getElementById("modalEditarBloque")
+  ).show();
+}
+
+function tieneAlfanumerico(texto) {
+  return /[a-zA-Z0-9]/.test(texto);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  cargarHorario();
+  cargarRequisitos("requisitos_comunidad", "bloqueReqComunidad", "Requisitos — Comunidad ITCJ");
+  cargarRequisitos("requisitos_equipos", "bloqueReqEquipos", "Requisitos — Equipos Representativos");
+  cargarCostos();
+});
+</script>
+{% endblock %}

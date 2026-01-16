@@ -1,0 +1,60 @@
+  :root {
+    --azul-itcj: hsl(219, 57%, 24%);
+    --azul-itcj-light: hsl(219, 57%, 34%);
+    --accent: hsl(210, 90%, 56%);
+  }
+
+  .actividad-card {
+    border: 0;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  .actividad-header {
+    background: linear-gradient(
+      135deg,
+      var(--azul-itcj),
+      var(--azul-itcj-light)
+    );
+    color: #fff;
+    padding: 1.25rem;
+  }
+
+  .actividad-subtitle {
+    color: #eef2ff;
+    opacity: 0.95;
+  }
+
+  .actividad-grid .card {
+    border-radius: 10px;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    transform: translateY(0);
+    font-size: 1.1rem;
+    line-height: 1.6;
+  }
+
+  .actividad-grid .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(25, 40, 80, 0.12);
+  }
+
+  .section-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--azul-itcj);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+  }
+
+  .actividad-list li {
+    margin-bottom: 0.6rem;
+  }
+
+  .btn-back {
+    background: linear-gradient(90deg, #4b6cb7, #182848);
+    color: white;
+    border: 0;
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+  }

@@ -1,0 +1,90 @@
+{% load static bootstrap5 %}
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+{% load static %}
+<link rel="icon" type="image/png" href="{% static 'gym/images/logo.png' %}">
+
+
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}Mi Gimnasio{% endblock %}</title>
+
+  {% bootstrap_css %}
+  <link rel="stylesheet" href="{% static 'styles/general.css' %}">
+  
+</head>
+<body class="d-flex flex-column min-vh-100">
+
+  <div class="d-flex flex-column justify-content-between min-vh-100">
+    <!-- Header -->
+    {% include 'gym/includes/header.html' %}
+
+    <!-- Contenido -->
+    <main class="container my-4 flex-grow-1">
+      {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    {% include 'gym/includes/footer.html' %}
+  </div>
+<!-- Modal de confirmación de cierre de sesión -->
+<div class="modal fade" id="logoutModal" tabindex="-1" aria-labelledby="logoutModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header fondo text-white">
+        <h5 class="modal-title" id="logoutModalLabel">Confirmar cierre de sesión</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        ¿Seguro que deseas cerrar la sesión?
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <!-- Botón que ejecuta el logout real -->
+        <a href="{% url 'logout' %}" class="btn text-white fondo">
+          Cerrar Sesión
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- Modal confirmar eliminación -->
+<div class="modal fade" id="confirmarEliminarModal" tabindex="-1" aria-labelledby="confirmarEliminarModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header fondo text-white">
+        <h5 class="modal-title" id="confirmarEliminarModalLabel">Confirmar eliminación</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        ¿Está seguro que desea eliminar el administrador?
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+
+        <!-- BOTÓN: envía el formulario existente (POST) -->
+        <button id="btnConfirmarEliminar" type="button" class="btn text-white fondo">
+          Sí, eliminar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+</div>
+
+  {% bootstrap_javascript %}
+  
+</body>
+</html>
+

@@ -1,0 +1,506 @@
+{% extends 'gym/base.html' %}
+{% load static %}
+{% block title %}Reglamento del Gimnasio{% endblock %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'styles/reglamento.css' %}" />
+<div class="container mt-5">
+  <div class="card reglamento-card shadow-lg">
+    <div class="card-header reglamento-header text-center">
+      <h3 class="mb-0">Reglamento del Gimnasio del ITCJ</h3>
+      <p class="mt-2 reglamento-subtitle">Normas y disposiciones para el uso responsable y seguro de las instalaciones.</p>
+    </div>
+
+    <div class="card-body p-4">
+      <div class="text-center mb-4">
+          <div id="alertGlobal"
+     class="alert alert-dismissible fade d-none"
+     role="alert">
+  <span id="alertGlobalMsg"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+        <h4 class="mt-2 fw-bold">Lea atentamente las siguientes reglas</h4>
+        <p class="text-muted fs-5">El cumplimiento de estas normas garantiza un ambiente ordenado, seguro y respetuoso para todos los usuarios.</p>
+      </div>
+{% if request.session.usuario_admin %}
+<div class="d-flex justify-content mb-4">
+  <button
+    class="btn btn-success"
+    data-bs-toggle="modal"
+    data-bs-target="#modalAgregarSeccion"
+  >
+    + Agregar Seccion
+  </button>
+</div>
+{% endif %}
+      <!-- Cuadrícula 3x2 -->
+      <div id="reglasGrid" class="row g-4 reglamento-grid">
+<div id="reglasGrid" class="row g-4 reglamento-grid">
+  <!-- Se llena desde JS -->
+</div>
+</div>
+
+
+      </div> <!-- row -->
+              <div class="col-12">
+          <div class="card disposicion-card border-0 shadow-sm mt-2">
+            <div class="card-body text-center">
+              <h5 class="fw-bold text-dark mb-3">Disposición final</h5>
+              <p class="text-muted mb-2">Cualquier situación no prevista en este reglamento será resuelta por el Departamento de Actividades Extraescolares.</p>
+              <p class="text-muted">El cumplimiento de estas normas contribuye a un ambiente seguro, ordenado y respetuoso para todos los usuarios del gimnasio.</p>
+              <div class="mt-3">
+                <a href="{% url 'index' %}" class="btn btn-back">Volver al inicio</a>
+              </div>
+            </div>
+          </div>
+        </div>
+    </div> <!-- card-body -->
+  </div> <!-- card -->
+</div> <!-- container -->
+<div class="modal fade" id="modalAgregarSeccion" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Agregar regla del reglamento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+<form id="formAgregarSeccion">
+  {% csrf_token %}
+  <div id="alertModal"
+     class="alert alert-danger d-none"
+     role="alert">
+</div>
+        <div class="modal-body">
+<div id="alertModal"
+     class="alert alert-danger d-none"
+     role="alert">
+</div>
+
+          <div class="mb-3">
+            <label class="form-label">Sección</label>
+            <input
+              type="text"
+              name="tipo"
+              class="form-control"
+              placeholder="Título de la sección"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label">Descripción de la sección</label>
+            <textarea
+              name="descripcion"
+              class="form-control"
+              rows="3"
+              required
+              style = "resize:none"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+          <button type="submit" class="btn btn-success">
+            Guardar
+          </button>
+        </div>
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEliminarSeccion">
+  <div class="modal-dialog">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Eliminar sección</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="alertEliminar"
+     class="alert alert-danger d-none"
+     role="alert">
+</div>
+
+        <p id="textoEliminarSeccion"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button class="btn btn-danger" onclick="confirmarEliminarSeccion()">
+          Eliminar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalEditarSeccion">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title">Editar sección</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <div id="alertEditar"
+     class="alert alert-danger d-none"
+     role="alert">
+</div>
+
+  <div class="d-flex justify-content mb-3">
+    <button type="button"
+            class="btn btn-success"
+            onclick="agregarNuevaRegla()">
+      + Agregar regla
+    </button>
+  </div>
+        <div id="listaReglasEditar"></div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button class="btn btn-success" onclick="guardarCambiosSeccion()">
+          Guardar cambios
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+let seccionAEliminar = null;
+function validarTextareasAlfanumerico(contenedorSelector) {
+  const regex = /[a-zA-Z0-9]/;
+
+  const textareas = document.querySelectorAll(
+    `${contenedorSelector} textarea`
+  );
+
+  for (const textarea of textareas) {
+    const valor = textarea.value.trim();
+
+    if (!regex.test(valor)) {
+      textarea.focus();
+      textarea.classList.add("is-invalid");
+      return false;
+    } else {
+      textarea.classList.remove("is-invalid");
+    }
+  }
+
+  return true;
+}
+
+function abrirEliminarSeccion(tipo) {
+  seccionAEliminar = tipo;
+
+  document.getElementById("textoEliminarSeccion").textContent =
+    `¿Seguro que deseas eliminar la sección "${tipo}" y todas sus reglas?`;
+
+  new bootstrap.Modal(
+    document.getElementById("modalEliminarSeccion")
+  ).show();
+}
+function eliminarRegla(id, btn) {
+  btn.closest("[data-id]").remove();
+  reglasEditadas = reglasEditadas.filter(r => r.id !== id);
+}
+function mostrarErrorModal(idAlert, mensaje) {
+  const alert = document.getElementById(idAlert);
+  alert.textContent = mensaje;
+  alert.classList.remove("d-none");
+}
+
+function agregarNuevaRegla() {
+  const contenedor = document.getElementById("listaReglasEditar");
+
+  const div = document.createElement("div");
+  div.className = "mb-3 d-flex gap-2 align-items-start";
+  div.dataset.id = ""; // 🔹 sin ID = regla nueva
+
+  div.innerHTML = `
+    <textarea class="form-control regla-texto"
+              rows="2"
+              required
+              style="resize:none"
+              placeholder="Nueva regla"></textarea>
+
+    <button class="btn btn-sm btn-danger mt-1"
+            onclick="this.closest('[data-id]').remove()">
+      Eliminar
+    </button>
+  `;
+
+  contenedor.prepend(div); // 🔥 se agrega al inicio
+}
+
+async function confirmarEliminarSeccion() {
+  const alertEliminar = document.getElementById("alertEliminar");
+  alertEliminar.classList.add("d-none");
+
+  const resp = await fetch("{% url 'eliminar_seccion' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      tipo: seccionAEliminar
+    })
+  });
+
+  const data = await resp.json();
+
+  if (data.success) {
+    bootstrap.Modal.getInstance(
+      document.getElementById("modalEliminarSeccion")
+    ).hide();
+
+    cargarReglas();
+    mostrarAlertGlobal(data.mensaje, "success");
+
+  } else {
+    mostrarErrorModal("alertEliminar", data.mensaje);
+  }
+}
+
+let seccionEditando = null;
+let reglasEditadas = [];
+
+async function abrirEditarSeccion(tipo) {
+  seccionEditando = tipo;
+
+  const tipoEncoded = encodeURIComponent(tipo);
+
+  const resp = await fetch(`/reglas/seccion/${tipoEncoded}/`);
+  const data = await resp.json();
+
+  reglasEditadas = data.reglas;
+
+  const contenedor = document.getElementById("listaReglasEditar");
+  contenedor.innerHTML = "";
+
+ reglasEditadas.forEach(r => {
+  contenedor.innerHTML += `
+    <div class="mb-3 d-flex gap-2 align-items-start" data-id="${r.id}">
+
+      <textarea class="form-control regla-texto"
+                style="resize:none"
+                required
+                rows="2">${r.regla}</textarea>
+
+      <button class="btn btn-sm btn-danger mt-1"
+              onclick="eliminarRegla(${r.id}, this)">
+        Eliminar
+      </button>
+
+    </div>
+  `;
+});
+
+  new bootstrap.Modal(
+    document.getElementById("modalEditarSeccion")
+  ).show();
+}
+async function guardarCambiosSeccion() {
+  const alertEditar = document.getElementById("alertEditar");
+  alertEditar.classList.add("d-none");
+  alertEditar.textContent = "";
+
+  // ✅ VALIDACIÓN ANTES DE GUARDAR
+  const valido = validarTextareasAlfanumerico("#listaReglasEditar");
+
+  if (!valido) {
+    mostrarErrorModal(
+      "alertEditar",
+      "Todas las reglas deben contener al menos un carácter alfanumérico."
+    );
+    return; // ⛔ NO sigue
+  }
+
+  const reglas = [];
+
+  document.querySelectorAll("#listaReglasEditar [data-id]").forEach(div => {
+    const id = div.dataset.id || null;
+    const texto = div.querySelector(".regla-texto").value.trim();
+
+    reglas.push({ id, texto });
+  });
+
+  const resp = await fetch("{% url 'guardar_seccion' %}", {
+    method: "POST",
+    headers: {
+      "X-CSRFToken": document.querySelector('[name=csrfmiddlewaretoken]').value,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      seccion: seccionEditando,
+      reglas
+    })
+  });
+
+  const data = await resp.json();
+
+  if (data.success) {
+    bootstrap.Modal.getInstance(
+      document.getElementById("modalEditarSeccion")
+    ).hide();
+
+    cargarReglas();
+    mostrarAlertGlobal(data.mensaje, "success");
+
+  } else {
+    mostrarErrorModal("alertEditar", data.mensaje);
+  }
+}
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  cargarReglas();
+});
+function mostrarAlertGlobal(mensaje, tipo = "success") {
+  const alert = document.getElementById("alertGlobal");
+  const msg = document.getElementById("alertGlobalMsg");
+
+  alert.className = `alert alert-${tipo} alert-dismissible fade show`;
+  msg.textContent = mensaje;
+
+  setTimeout(() => {
+    alert.classList.remove("show");
+    setTimeout(() => alert.classList.add("d-none"), 300);
+  }, 4000);
+}
+
+document.getElementById("formAgregarSeccion").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const form = e.target;
+  const formData = new FormData(form);
+
+  const alertGlobal = document.getElementById("alertGlobal");
+  const alertGlobalMsg = document.getElementById("alertGlobalMsg");
+
+  const alertModal = document.getElementById("alertModal");
+
+  // Limpia alert modal siempre
+  alertModal.classList.add("d-none");
+  alertModal.textContent = "";
+
+  try {
+    const resp = await fetch("{% url 'agregar_seccion' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": formData.get("csrfmiddlewaretoken")
+      },
+      body: formData
+    });
+
+    const data = await resp.json();
+
+    if (data.success) {
+
+      /* =====================
+         ✅ ÉXITO → ALERT GLOBAL
+         ===================== */
+      alertGlobal.classList.remove("d-none", "alert-danger");
+      alertGlobal.classList.add("alert-success", "show");
+      alertGlobalMsg.textContent = data.mensaje;
+
+      form.reset();
+
+      const modal = bootstrap.Modal.getInstance(
+        document.getElementById("modalAgregarSeccion")
+      );
+      modal.hide();
+
+      await cargarReglas();
+
+      setTimeout(() => {
+        alertGlobal.classList.remove("show");
+        setTimeout(() => alertGlobal.classList.add("d-none"), 300);
+      }, 4000);
+
+    } else {
+
+      /* =====================
+         ❌ ERROR → ALERT MODAL
+         ===================== */
+      alertModal.textContent = data.mensaje;
+      alertModal.classList.remove("d-none");
+    }
+
+  } catch (error) {
+    alertModal.textContent = "Error inesperado al guardar la sección";
+    alertModal.classList.remove("d-none");
+  }
+});
+
+async function cargarReglas() {
+  const grid = document.getElementById("reglasGrid");
+  if (!grid) return;
+
+  try {
+    const resp = await fetch("{% url 'reglas_json' %}");
+    const data = await resp.json();
+
+    grid.innerHTML = ""; // 🔥 Limpia todo
+
+    data.reglas.forEach(regla => {
+      grid.innerHTML += `
+        <div class="col-md-4">
+          <div class="card h-100 shadow-sm border-0">
+            <div class="card-body">
+
+              <h5 class="section-title">${regla.tipo}</h5>
+              <p class="text-muted">${regla.descripcion}</p>
+
+              <ul class="reglamento-list">
+                ${regla.items.map(i => `<li>${i}</li>`).join("")}
+              </ul>
+
+              {% if request.session.usuario_admin %}
+              <div class="mt-3 d-flex justify-content-end gap-2">
+              
+ <button class="btn btn-sm btn-outline-primary"
+        onclick="abrirEditarSeccion('${regla.tipo}')">
+  Editar
+</button>
+<button class="btn btn-sm btn-outline-danger"
+        onclick="abrirEliminarSeccion('${regla.tipo}')">
+  Eliminar
+</button>
+
+</div>
+
+
+              {% endif %}
+
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+  } catch (err) {
+    console.error("Error al cargar reglas", err);
+  }
+}
+</script>
+
+{% endblock %}

@@ -1,0 +1,75 @@
+  :root {
+    --azul-itcj: hsl(219,57%,24%); /* color institucional */
+    --azul-itcj-2: hsl(219,57%,34%);
+    --muted: #6c757d;
+  }
+
+  /* Contenedor principal */
+  .trainers-hero {
+    background: linear-gradient(135deg, var(--azul-itcj), var(--azul-itcj-2));
+    color: #fff;
+    padding: 1.4rem 1.25rem;
+    border-radius: 10px;
+    box-shadow: 0 14px 30px rgba(20,30,60,0.12);
+  }
+
+  .trainers-hero h1 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+  }
+
+  .trainers-hero p {
+    margin: .35rem 0 0;
+    color: rgba(255,255,255,0.90);
+    font-size: 1rem;
+  }
+
+  /* Grid de entrenadores */
+  .trainer-card {
+    border: 0;
+    border-radius: 12px;
+    transition: transform .18s ease, box-shadow .18s ease;
+    overflow: hidden;
+  }
+
+  .trainer-card:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 22px 45px rgba(25,40,80,0.12);
+  }
+
+.trainer-img {
+    width: 100%;
+    max-height: 280px;   /* alto máximo */
+    object-fit: cover;   /* mantiene proporción y recorta si es necesario */
+    display: block;
+}
+  .trainer-body h5 {
+    font-size: 1.15rem;
+    margin-bottom: .25rem;
+  }
+
+  .trainer-role {
+    color: var(--muted);
+    font-size: .95rem;
+    margin-bottom: .8rem;
+  }
+
+  .trainer-bio {
+    font-size: .98rem;
+    color: #444;
+    line-height: 1.45;
+  }
+
+  /* Botones y acciones */
+  .btn-contact {
+    background: linear-gradient(90deg, #2f5aa3, #1a355f);
+    color: #fff;
+    border: 0;
+  }
+
+  /* Responsive: ajustar altura de imagen en móviles */
+  @media (max-width: 575px){
+    .trainer-img { height: 180px; }
+    .trainers-hero h1 { font-size: 1.35rem; }
+  }

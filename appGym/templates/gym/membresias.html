@@ -1,0 +1,1038 @@
+{% extends 'gym/base.html' %} {% load static bootstrap5 %} {% block title%}
+Gestión de Membresías {% endblock %} {% block content %}
+<div class="container mt-5">
+  <div class="row g-4">
+    <div class="col-lg-6 col-md-12">
+      <div class="card shadow h-100">
+        <div class="card-header fondo text-white text-center">
+          <h4 class="mb-0">Tipos de Membresía</h4>
+        </div>
+
+        <div class="card-body">
+          <div id="alert-tipo-container"></div>
+
+          <form method="POST" id="tipo-form">
+            {% csrf_token %}
+
+            <!-- Nombre tipo -->
+            <div class="mb-3">
+              <label for="nombre_tipo" class="form-label">Nombre</label>
+              <input
+                type="text"
+                class="form-control"
+                id="nombre_tipo"
+                name="nombre_tipo"
+                placeholder="Mensual, Anual, Premium"
+                required
+              />
+            </div>
+
+            <!-- Duración -->
+            <div class="mb-3">
+              <label for="duracion" class="form-label">Duración (días)</label>
+              <input
+                type="number"
+                class="form-control"
+                id="duracion"
+                name="duracion"
+                placeholder="Ej: 30, 90, 365"
+                required
+              />
+            </div>
+
+            <!-- Costo -->
+            <div class="mb-3">
+              <label for="costo_tipo" class="form-label">Costo</label>
+              <input
+                type="number"
+                class="form-control"
+                id="costo_tipo"
+                name="costo_tipo"
+                placeholder="Ej: 200"
+                required
+              />
+            </div>
+
+            <div class="text-center">
+              <button type="submit" class="btn fondo text-white w-100">
+                Guardar Tipo de Membresía
+              </button>
+              
+            </div>
+          </form>
+           <div class="accordion" id="accordionTipos">
+            <p class="text-center text-muted my-2">Cargando tipos...</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="col-lg-6 col-md-12">
+      <div class="card shadow h-100">
+        <div class="card-header fondo text-white text-center">
+          <h4 class="mb-0">Gestión de Membresía</h4>
+        </div>
+
+        <div class="card-body">
+          <div id="alert-gestion-container"></div>
+          <h5 class="mb-3 text-primary">Buscar Usuario</h5>
+
+          <form id="form-buscar-membresia">
+            <div class="row">
+              <div class="col-md-6 mb-3">
+                <input
+                  type="number"
+                  class="form-control"
+                  id="buscar_id"
+                  placeholder="Buscar por ID"
+                />
+              </div>
+              <div class="col-md-6 mb-3">
+                <input
+                  type="text"
+                  class="form-control"
+                  id="buscar_nombre"
+                  placeholder="Buscar por nombre"
+                />
+              </div>
+            </div>
+
+            <div class="text-center">
+              <button type="submit" class="btn fondo text-white w-100">
+                Buscar
+              </button>
+            </div>
+          </form>
+
+          <ul
+            id="resultados"
+            class="list-group mt-4"
+            style="display: none"
+          ></ul>
+
+          <!-- === DETALLE USUARIO (IGUAL QUE USUARIOS) === -->
+          <div id="detalle-usuario" class="mt-4 d-none">
+            <div class="card">
+              <div class="card-body d-flex align-items-center">
+                <img
+                  id="detalle-foto"
+                  src=""
+                  alt="Foto"
+                  class="rounded me-3 border"
+                  style="width: 80px; height: 80px; object-fit: cover"
+                />
+                <div>
+                  <h6 id="detalle-nombre" class="mb-1"></h6>
+                  <p id="detalle-id" class="text-muted mb-1"></p>
+                  <p id="detalle-tipo" class="text-muted mb-0"></p>
+                </div>
+              </div>
+
+              <!-- === SECCIÓN MEMBRESÍA === -->
+              <div class="card-footer" id="info-membresia"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalEliminar" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title">Confirmar eliminación</h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+          ></button>
+        </div>
+
+        <div class="modal-body">
+          <p id="modalMensaje"></p>
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn btn-secondary" data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button id="btnAceptarEliminar" class="btn btn-danger">
+            Eliminar
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal fade" id="modalMensaje2" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalMensajeTitulo">Mensaje</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="modalMensajeTexto"></p>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+          Aceptar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="modalConfirmacion" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalConfirmTitulo">Confirmar acción</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <p id="modalConfirmTexto"></p>
+
+        <div id="modalConfirmInputWrapper" class="d-none mt-3">
+          <label class="form-label" id="modalConfirmInputLabel"></label>
+          <input type="text" id="modalConfirmInput" class="form-control">
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancelar
+        </button>
+        <button type="button" id="btnConfirmarAccion" class="btn btn-danger">
+          Confirmar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+  <script>
+    let usuarioSeleccionadoId = null;
+    let membresiaAEliminar = null;
+    let modalEliminar = null;
+    document.addEventListener("DOMContentLoaded", () => {
+      modalEliminar = new bootstrap.Modal(
+        document.getElementById("modalEliminar")
+      );
+      cargarMembresias();
+
+      const formBuscar = document.getElementById("form-buscar-membresia");
+      const resultados = document.getElementById("resultados");
+      const detalleUsuario = document.getElementById("detalle-usuario");
+      const infoMembresia = document.getElementById("info-membresia");
+
+      // === BUSCAR USUARIO (MISMO FETCH QUE USUARIOS) ===
+      formBuscar.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const id = document.getElementById("buscar_id").value.trim();
+        const nombre = document.getElementById("buscar_nombre").value.trim();
+
+        resultados.innerHTML = "";
+        resultados.style.display = "block";
+        detalleUsuario.classList.add("d-none");
+
+        if (!id && !nombre) {
+          resultados.innerHTML = `
+        <li class="list-group-item text-center text-danger">
+          Ingresa un ID o un nombre.
+        </li>`;
+          return;
+        }
+
+        try {
+          const response = await fetch(
+            `{% url 'gestion_usuarios' %}?id_usuario=${id}&nombre=${nombre}`,
+            { headers: { "X-Requested-With": "XMLHttpRequest" } }
+          );
+
+          const data = await response.json();
+
+          if (!data.success || data.resultados.length === 0) {
+            resultados.innerHTML = `
+          <li class="list-group-item text-center text-muted">
+            Sin resultados
+          </li>`;
+            return;
+          }
+
+          // === LISTAR RESULTADOS (IGUAL QUE USUARIOS) ===
+          data.resultados.forEach((u) => {
+            const li = document.createElement("li");
+            li.className = "list-group-item list-group-item-action";
+            li.textContent = `ID: ${u.id_usuario} - ${u.nombres} ${u.apellido_paterno} (${u.tipo_usuario})`;
+            li.onclick = () => mostrarDetalle(u);
+            resultados.appendChild(li);
+          });
+        } catch (error) {
+          resultados.innerHTML = `
+        <li class="list-group-item text-center text-danger">
+          Error al conectar con el servidor.
+        </li>`;
+        }
+      });
+
+      // === MOSTRAR DETALLE (COPIADO 1:1) ===
+      async function mostrarDetalle(u) {
+        usuarioSeleccionadoId = u.id_usuario;
+        detalleUsuario.classList.remove("d-none");
+
+        document.getElementById(
+          "detalle-nombre"
+        ).textContent = `${u.nombres} ${u.apellido_paterno} ${u.apellido_materno}`;
+
+        document.getElementById("detalle-id").textContent =
+          "ID: " + u.id_usuario;
+
+        document.getElementById("detalle-tipo").textContent =
+          "Tipo: " + u.tipo_usuario;
+
+        document.getElementById("detalle-foto").src = u.foto
+  ? `/media/${u.foto}`
+  : "/media/fotos_usuarios/default.jpg";
+
+        // 🔽 AHORA LO NUEVO: MEMBRESÍA
+        verificarMembresia(u.id_usuario);
+      }
+      function formatearFechaISO(fecha) {
+  const [d, m, y] = fecha.split("/");
+  return `${y}-${m}-${d}`;
+}
+      async function cargarTiposMembresia(idSeleccionado = null) {
+  const select = document.getElementById("select-membresia");
+
+  const res = await fetch("{% url 'obtener_membresias' %}");
+  const data = await res.json();
+
+  select.innerHTML = `<option value="">Seleccione una membresía</option>`;
+
+  data.data.forEach(m => {
+    const opt = document.createElement("option");
+    opt.value = m.id; // id_membresia
+    opt.textContent = `${m.nombre} - ${m.duracion} días ($${m.costo})`;
+    opt.dataset.duracion = m.duracion;
+    opt.dataset.costo = m.costo;
+
+    if (idSeleccionado && m.id === idSeleccionado) {
+      opt.selected = true; // ✅ aquí se selecciona
+    }
+
+    select.appendChild(opt);
+  });
+}
+function confirmarAccion({
+  titulo = "Confirmar",
+  texto = "",
+  mostrarInput = false,
+  labelInput = "",
+  placeholder = "",
+  onConfirm = () => {}
+}) {
+  const modalEl = document.getElementById("modalConfirmacion");
+  const modal = new bootstrap.Modal(modalEl);
+
+  document.getElementById("modalConfirmTitulo").innerText = titulo;
+  document.getElementById("modalConfirmTexto").innerText = texto;
+
+  const wrapper = document.getElementById("modalConfirmInputWrapper");
+  const input = document.getElementById("modalConfirmInput");
+
+  if (mostrarInput) {
+    wrapper.classList.remove("d-none");
+    document.getElementById("modalConfirmInputLabel").innerText = labelInput;
+    input.placeholder = placeholder;
+    input.value = "";
+  } else {
+    wrapper.classList.add("d-none");
+    input.value = "";
+  }
+
+  const btnConfirmar = document.getElementById("btnConfirmarAccion");
+  btnConfirmar.onclick = () => {
+    modal.hide();
+    onConfirm(input.value);
+  };
+
+  modal.show();
+}
+function mostrarMensaje({ titulo = "Mensaje", texto = "", tipo = "info" }) {
+  const modal = new bootstrap.Modal(document.getElementById("modalMensaje2"));
+
+  document.getElementById("modalMensajeTitulo").innerText = titulo;
+  document.getElementById("modalMensajeTexto").innerText = texto;
+
+  const header = document.querySelector("#modalMensaje2 .modal-header");
+
+  header.classList.remove(
+    "bg-success", "bg-danger", "bg-warning", "bg-info", "text-white"
+  );
+
+  const colores = {
+    success: "bg-success text-white",
+    error: "bg-danger text-white",
+    warning: "bg-warning",
+    info: "bg-info text-white"
+  };
+
+  header.classList.add(...colores[tipo].split(" "));
+
+  modal.show();
+}
+
+function recalcularMembresia() {
+
+  const select = document.getElementById("select-membresia");
+  const option = select.options[select.selectedIndex];
+
+  const fechaInicioInput = document.getElementById("edit-fecha-inicio");
+  const fechaFinInput = document.getElementById("edit-fecha-fin");
+  const costoInput = document.getElementById("costo-membresia"); // si existe
+
+  if (!select.value) {
+    fechaFinInput.value = "";
+    if (costoInput) costoInput.value = "";
+    return;
+  }
+
+  const duracion = parseInt(option.dataset.duracion, 10);
+  const costo = option.dataset.costo;
+
+  // Fecha inicio
+  let fechaInicio;
+
+  if (fechaInicioInput.value) {
+    fechaInicio = new Date(fechaInicioInput.value);
+  } else {
+    fechaInicio = new Date();
+    fechaInicioInput.value = fechaInicio.toISOString().split("T")[0];
+  }
+
+  // Fecha término
+  const fechaFin = new Date(fechaInicio);
+  fechaFin.setDate(fechaInicio.getDate() + duracion);
+
+  fechaFinInput.value = fechaFin.toISOString().split("T")[0];
+
+  // Costo (si existe input)
+  if (costoInput) {
+    costoInput.value = `$${costo}`;
+  }
+}
+
+async function actualizarMembresia({ comentario = null } = {}) {
+
+  const status = document.getElementById("edit-status").value;
+  const idMembresia = document.getElementById("select-membresia").value;
+  const fechaInicio = document.getElementById("nuevo-fecha-inicio").value;
+  const fechaFin = document.getElementById("nuevo-fecha-fin").value;
+
+  // 🔴 VALIDACIÓN SOLO SI NO ES CANCELADA
+  if (status !== "CANCELADA") {
+    if (!idMembresia || !fechaInicio || !fechaFin) {
+      mostrarMensaje({
+        titulo: "Error",
+        texto: "Complete los datos de la nueva membresía",
+        tipo: "warning"
+      });
+      document.getElementById("modalMensaje2").dismiss()
+      return;
+    }
+  }
+
+  const payload = {
+    id_usuario: usuarioSeleccionadoId,
+    status: status,
+    comentario: comentario
+  };
+
+  // Solo enviar estos campos si NO es cancelación
+  if (status !== "CANCELADA") {
+    payload.id_membresia = idMembresia;
+    payload.fecha_inicial = fechaInicio;
+    payload.fecha_final = fechaFin;
+  }
+
+  try {
+    const resp = await fetch("/actualizar_membresia/", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await resp.json();
+
+    if (data.success) {
+      mostrarMensaje({
+        titulo: "Éxito",
+        texto: data.mensaje,
+        tipo: "success"
+      });
+
+      verificarMembresia(usuarioSeleccionadoId);
+    } else {
+      mostrarMensaje({
+        titulo: "Error",
+        texto: data.error,
+        tipo: "error"
+      });
+    }
+
+  } catch (err) {
+    mostrarMensaje({
+      titulo: "Error",
+      texto: "Error al actualizar la membresía",
+      tipo: "error"
+    });
+  }
+}
+
+
+function recalcularNuevaFechaFin() {
+
+  const select = document.getElementById("select-membresia");
+  const option = select.options[select.selectedIndex];
+
+  const inicioInput = document.getElementById("nuevo-fecha-inicio");
+  const finInput = document.getElementById("nuevo-fecha-fin");
+
+  if (!select.value || !inicioInput.value) {
+    finInput.value = "";
+    return;
+  }
+
+  const duracion = parseInt(option.dataset.duracion, 10);
+
+  const fechaInicio = new Date(inicioInput.value);
+  const fechaFin = new Date(fechaInicio);
+
+  fechaFin.setDate(fechaInicio.getDate() + duracion);
+
+  finInput.value = fechaFin.toISOString().split("T")[0];
+}
+      // === CONSULTAR MEMBRESÍA ===
+      async function verificarMembresia(idUsuario) {
+        infoMembresia.innerHTML = `
+      <div class="text-muted text-center">
+        Verificando membresía...
+      </div>`;
+
+        try {
+          const res = await fetch("{% url 'buscar_usuario_membresia' %}", {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrftoken,
+              "X-Requested-With": "XMLHttpRequest",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ usuario: idUsuario }),
+          });
+
+          const data = await res.json();
+
+          if (data.tiene_membresia) {
+ infoMembresia.innerHTML = `
+  <div class="card border-success mb-3">
+    <div class="card-body">
+
+      <!-- Tipo de membresía -->
+      <div class="mb-3">
+        <label class="form-label">Tipo de membresía</label>
+        <select id="select-membresia" class="form-select">
+          <option value="">Seleccione una membresía</option>
+        </select>
+      </div>
+
+      <!-- Fechas -->
+      <div class="row mb-3">
+
+        <!-- Fechas actuales -->
+        <div class="col-md-6">
+          <h6 class="text-muted">Fechas actuales</h6>
+
+          <div class="mb-2">
+            <label class="form-label">Inicio actual</label>
+            <input type="date" class="form-control"
+              value="${formatearFechaISO(data.membresia.fecha_inicial)}"
+              readonly>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Término actual</label>
+            <input type="date" class="form-control"
+              value="${formatearFechaISO(data.membresia.fecha_final)}"
+              readonly>
+          </div>
+        </div>
+
+        <!-- Fechas nuevas -->
+        <div class="col-md-6">
+          <h6 class="text-muted">Nuevas fechas</h6>
+
+          <div class="mb-2">
+            <label class="form-label">Nuevo inicio</label>
+            <input type="date" id="nuevo-fecha-inicio" class="form-control">
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label">Nuevo término</label>
+            <input type="date" id="nuevo-fecha-fin" class="form-control" readonly>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Estado -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <label class="form-label">Estado</label>
+          <select id="edit-status" class="form-select">
+            <option value="ACTIVA" ${data.membresia.status === "ACTIVA" ? "selected" : ""}>ACTIVA</option>
+            <option value="CANCELADA" ${data.membresia.status === "CANCELADA" ? "selected" : ""}>CANCELADA</option>
+            <option value="EXPIRADA" ${data.membresia.status === "EXPIRADA" ? "selected" : ""}>EXPIRADA</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Comentario (solo si existe) -->
+      ${
+        data.membresia.comentario
+          ? `
+          <div class="mb-3">
+            <label class="form-label">Comentario de cancelacion</label>
+            <input type="text" class="form-control"
+              value="${data.membresia.comentario}"
+              readonly>
+          </div>
+        `
+          : ""
+      }
+
+      <!-- Botón -->
+      <button id="btnActualizarMembresia" class="btn btn-primary w-100">
+        Actualizar membresía
+      </button>
+
+    </div>
+  </div>
+`;
+
+cargarTiposMembresia(data.membresia.id_membresia);
+document.getElementById("select-membresia")
+  .addEventListener("change", recalcularMembresia);
+  document.getElementById("nuevo-fecha-inicio")
+  .addEventListener("change", recalcularNuevaFechaFin);
+  document.getElementById("select-membresia")
+  .addEventListener("change", recalcularNuevaFechaFin);
+
+document.addEventListener("click", (e) => {
+  if (e.target.id === "btnActualizarMembresia") {
+
+    const status = document.getElementById("edit-status").value;
+
+    // 🔴 Cancelación
+    if (status === "CANCELADA") {
+      confirmarAccion({
+        titulo: "Cancelar membresía",
+        texto: "Esta acción cancelará la membresía del usuario.",
+        mostrarInput: true,
+        labelInput: "Motivo de cancelación (obligatorio)",
+        placeholder: "Escriba el motivo...",
+        onConfirm: (comentario) => {
+          if (!comentario.trim()) {
+            mostrarMensaje({
+              titulo: "Error",
+              texto: "El comentario de cancelación es obligatorio",
+              tipo: "warning"
+            });
+            return;
+          }
+
+          actualizarMembresia({ comentario });
+        }
+      });
+
+    } 
+    // 🟢 Actualizar / Renovar
+    else {
+      confirmarAccion({
+        titulo: "Actualizar membresía",
+        texto: "¿Deseas guardar los cambios de la membresía?",
+        onConfirm: () => actualizarMembresia()
+      });
+    }
+  }
+});
+
+          } else {
+            infoMembresia.innerHTML = `
+  <div class="alert alert-warning mb-3">
+    El usuario no tiene membresía activa.
+  </div>
+
+  <div class="mb-3">
+    <label class="form-label">Tipo de membresía</label>
+    <select id="select-membresia" class="form-select">
+      <option value="">Seleccione una membresía</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Fecha inicio</label>
+      <input type="text" id="fecha-inicio" class="form-control" disabled />
+    </div>
+
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Fecha término</label>
+      <input type="text" id="fecha-fin" class="form-control" disabled />
+    </div>
+
+    <div class="col-md-4 mb-3">
+      <label class="form-label">Costo</label>
+      <input type="text" id="costo-membresia" class="form-control" disabled />
+    </div>
+  </div>
+
+  <button id="btnAsignarMembresia" class="btn btn-primary w-100">
+    Asignar membresía
+  </button>
+`;
+            document
+              .getElementById("select-membresia")
+              .addEventListener("change", function () {
+                const option = this.options[this.selectedIndex];
+
+                const fechaInicioInput =
+                  document.getElementById("fecha-inicio");
+                const fechaFinInput = document.getElementById("fecha-fin");
+                const costoInput = document.getElementById("costo-membresia");
+
+                if (!this.value) {
+                  fechaInicioInput.value = "";
+                  fechaFinInput.value = "";
+                  costoInput.value = "";
+                  return;
+                }
+
+                const duracion = parseInt(option.dataset.duracion, 10);
+                const costo = option.dataset.costo;
+
+                // Fecha inicio = hoy
+                const hoy = new Date();
+                const fechaInicio = hoy.toISOString().split("T")[0];
+
+                // Fecha fin = hoy + duración
+                const fechaFin = new Date(hoy);
+                fechaFin.setDate(hoy.getDate() + duracion);
+
+                fechaInicioInput.value = fechaInicio;
+                fechaFinInput.value = fechaFin.toISOString().split("T")[0];
+                costoInput.value = `$${costo}`;
+              });
+
+            document.getElementById("btnAsignarMembresia").addEventListener("click", async () => {
+
+  const select = document.getElementById("select-membresia");
+
+const payload = {
+  id_usuario: usuarioSeleccionadoId,
+  id_membresia: document.getElementById("select-membresia").value,
+  fecha_inicio: document.getElementById("fecha-inicio").value,
+  fecha_fin: document.getElementById("fecha-fin").value
+};
+
+  try {
+    const res = await fetch("{% url 'asignar_membresia_usuario' %}", {
+      method: "POST",
+      headers: {
+        "X-CSRFToken": csrftoken,
+        "X-Requested-With": "XMLHttpRequest",
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await res.json();
+
+    if (data.success) {
+  mostrarMensaje({
+    titulo: "Éxito",
+    texto: data.mensaje,
+    tipo: "success"
+  });
+
+  verificarMembresia(payload.id_usuario); // refrescar vista
+} else {
+  mostrarMensaje({
+    titulo: "Error",
+    texto: data.error,
+    tipo: "error"
+  });
+}
+  } catch (error) {
+  mostrarMensaje({
+    titulo: "Error",
+    texto: "Error al asignar membresía",
+    tipo: "error"
+  });
+}
+});
+            cargarTiposMembresia();
+          }
+        } catch (error) {
+          infoMembresia.innerHTML = `
+        <div class="alert alert-danger">
+          Error al consultar membresía.
+        </div>`;
+        }
+      }
+    });
+    document
+      .getElementById("tipo-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const formData = new FormData(e.target);
+        const alertBox = document.getElementById("alert-tipo-container");
+
+        try {
+          const res = await fetch("{% url 'crear_membresia' %}", {
+            method: "POST",
+            body: formData,
+          });
+
+          const data = await res.json();
+
+          if (data.status === "success") {
+            alertBox.innerHTML = `<div class="alert alert-success">${data.message}</div>`;
+            e.target.reset();
+            cargarMembresias(); // refrescar listado
+          } else {
+            alertBox.innerHTML = `<div class="alert alert-danger">${data.message}</div>`;
+          }
+        } catch (error) {
+          alertBox.innerHTML = `<div class="alert alert-danger">Error al conectar con el servidor.</div>`;
+        }
+      });
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie !== "") {
+        const cookies = document.cookie.split(";");
+        for (let cookie of cookies) {
+          cookie = cookie.trim();
+          if (cookie.startsWith(name + "=")) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+    const csrftoken = getCookie("csrftoken");
+
+    async function cargarMembresias() {
+      const container = document.getElementById("accordionTipos");
+      container.innerHTML = `<p class="text-center text-muted my-2">Cargando...</p>`;
+
+      const res = await fetch("{% url 'obtener_membresias' %}");
+      const data = await res.json();
+
+      if (!data.data.length) {
+        container.innerHTML = `<p class="text-center text-muted my-2">No hay membresías registradas.</p>`;
+        return;
+      }
+
+      let html = "";
+      data.data.forEach((m, idx) => {
+        html += `
+      <div class="accordion-item">
+        <h2 class="accordion-header" id="m-${idx}">
+          <button class="accordion-button collapsed" type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#item-${idx}">
+            <strong>${m.nombre}</strong>
+          </button>
+        </h2>
+
+        <div id="item-${idx}" class="accordion-collapse collapse"
+          data-bs-parent="#accordionTipos">
+
+          <div class="accordion-body">
+            <label>Duración (días)</label>
+            <input type="number" class="form-control mb-2"
+              id="dur-${m.nombre}" value="${m.duracion}">
+
+            <label>Costo</label>
+            <input type="number" class="form-control mb-2"
+              id="cost-${m.nombre}" value="${m.costo}">
+
+            <div class="d-flex gap-2 mt-2">
+              <button class="btn btn-warning w-50"
+                onclick="editarMembresia('${m.nombre}')">
+                Editar
+              </button>
+
+              <button class="btn btn-danger w-50"
+                onclick="eliminarMembresia('${m.nombre}')">
+                Eliminar
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+      });
+
+      container.innerHTML = html;
+    }
+
+    async function editarMembresia(nombre) {
+      const duracion = document.getElementById(`dur-${nombre}`).value;
+      const costo = document.getElementById(`cost-${nombre}`).value;
+
+      const form = new FormData();
+      form.append("nombre", nombre);
+      form.append("duracion", duracion);
+      form.append("costo", costo);
+
+      const res = await fetch("{% url 'editar_membresia' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrftoken,
+          "X-Requested-With": "XMLHttpRequest",
+        },
+        body: form,
+      });
+
+      const data = await res.json();
+
+      mostrarAlertaTipo(data.message, data.status);
+      cargarMembresias();
+    }
+
+    async function eliminarMembresia(nombre) {
+      membresiaAEliminar = nombre;
+      document.getElementById(
+        "modalMensaje"
+      ).innerText = `¿Seguro que deseas eliminar la membresía "${nombre}"?`;
+      modalEliminar.show();
+    }
+
+    function mostrarAlertaTipo(message, status = "success") {
+      const container = document.getElementById("alert-tipo-container");
+
+      const color = status === "error" ? "danger" : "success";
+
+      container.innerHTML = `
+    <div class="alert alert-${color} alert-dismissible fade show" role="alert">
+      ${message}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  `;
+    }
+    document
+      .getElementById("btnAceptarEliminar")
+      .addEventListener("click", async () => {
+        const form = new FormData();
+        form.append("nombre", membresiaAEliminar);
+
+        const res = await fetch("{% url 'eliminar_membresia' %}", {
+          method: "POST",
+          headers: {
+            "X-CSRFToken": csrftoken,
+            "X-Requested-With": "XMLHttpRequest",
+          },
+          body: form,
+        });
+
+        const data = await res.json();
+        modalEliminar.hide();
+
+        mostrarAlertaTipo(data.message, data.status);
+        cargarMembresias();
+      });
+    document.addEventListener("DOMContentLoaded", cargarMembresias);
+    document
+      .getElementById("buscar-usuario-form")
+      .addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const usuario = document.getElementById("buscar_usuario").value;
+        const alertBox = document.getElementById("alert-gestion-container");
+        const resultado = document.getElementById("resultado-usuario");
+        const infoMembresia = document.getElementById("info-membresia");
+
+        alertBox.innerHTML = "";
+        resultado.style.display = "none";
+        infoMembresia.innerHTML = "";
+
+        try {
+          const res = await fetch("{% url 'buscar_usuario_membresia' %}", {
+            method: "POST",
+            headers: {
+              "X-CSRFToken": csrftoken,
+              "X-Requested-With": "XMLHttpRequest",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ usuario }),
+          });
+
+          const data = await res.json();
+
+          if (!data.existe) {
+            alertBox.innerHTML = `
+        <div class="alert alert-danger">
+          El usuario no existe.
+        </div>`;
+            return;
+          }
+
+          // Mostrar usuario
+          document.getElementById("nombre_usuario").value = data.nombre;
+          resultado.style.display = "block";
+
+          if (data.tiene_membresia) {
+            infoMembresia.innerHTML = `
+        <div class="card border-success">
+          <div class="card-body">
+            <h6 class="text-success">Membresía activa</h6>
+            <p><strong>Tipo:</strong> ${data.membresia.tipo}</p>
+            <p><strong>Inicio:</strong> ${data.membresia.inicio}</p>
+            <p><strong>Fin:</strong> ${data.membresia.fin}</p>
+          </div>
+        </div>`;
+          } else {
+            infoMembresia.innerHTML = `
+        <div class="alert alert-warning">
+          El usuario no tiene membresía.
+        </div>
+        <button class="btn btn-primary w-100 mt-2">
+          Asignar membresía
+        </button>`;
+          }
+        } catch (error) {
+          alertBox.innerHTML = `
+      <div class="alert alert-danger">
+        Error al conectar con el servidor.
+      </div>`;
+        }
+      });
+  </script>
+  {% endblock %}
+</div>

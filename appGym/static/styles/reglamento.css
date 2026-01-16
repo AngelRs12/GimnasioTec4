@@ -1,0 +1,71 @@
+  :root {
+    --azul-itcj: hsl(219, 57%, 24%);
+    --azul-itcj-light: hsl(219, 57%, 34%);
+    --accent: hsl(210, 90%, 56%);
+  }
+
+  /* Tarjeta principal */
+  .reglamento-card {
+    border: 0;
+    overflow: hidden;
+    border-radius: 12px;
+  }
+
+  /* Encabezado */
+  .reglamento-header {
+    background: linear-gradient(135deg, var(--azul-itcj), var(--azul-itcj-light));
+    color: #fff;
+    padding: 1.25rem;
+  }
+
+  .reglamento-subtitle {
+    color: #eef2ff;
+    opacity: 0.95;
+  }
+
+  /* Cuerpo y texto general */
+  .reglamento-grid .card {
+    border-radius: 10px;
+    transition: transform 0.22s ease, box-shadow 0.22s ease;
+    transform: translateY(0);
+    font-size: 1.1rem; /* texto más grande */
+    line-height: 1.6;
+  }
+
+  .reglamento-grid .card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 35px rgba(25, 40, 80, 0.12);
+  }
+
+  /* Títulos de sección */
+  .section-title {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: var(--azul-itcj);
+    margin-bottom: 1rem;
+    border-bottom: 2px solid #dee2e6;
+    padding-bottom: 0.5rem;
+  }
+
+  /* Listas */
+  .reglamento-list li {
+    margin-bottom: 0.6rem;
+  }
+
+  /* Card de disposición final */
+  .disposicion-card {
+    margin: 0 auto;
+    max-width: 920px;
+    border-radius: 14px;
+    background: linear-gradient(180deg, #fff, #fbfdff);
+    font-size: 1.15rem;
+  }
+
+  /* Botón volver */
+  .btn-back {
+    background: linear-gradient(90deg, #4b6cb7, #182848);
+    color: white;
+    border: 0;
+    font-size: 1rem;
+    padding: 0.6rem 1.2rem;
+  }

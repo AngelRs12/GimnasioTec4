@@ -1,0 +1,500 @@
+{% extends 'gym/base.html' %}
+{% load static %}
+
+{% block title %}Gráficas | Gimnasio{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --azul-itcj: hsl(219,57%,24%);
+    --azul-itcj-light: hsl(219,57%,34%);
+  }
+  .report-card { border-radius: 12px; border: 0; }
+  .report-header { background: linear-gradient(135deg, var(--azul-itcj), var(--azul-itcj-light)); color: #fff; padding: 1rem; }
+  .chart-wrap { background: #fff; padding: 1rem; border-radius: 10px; box-shadow: 0 8px 20px rgba(20, 30, 60, 0.06); min-height: 320px; display: flex; align-items: center; justify-content: center; }
+  .download-btn { background: linear-gradient(90deg, #4b6cb7, #182848); color: #fff; border: 0; }
+  @media (max-width: 767px) { .chart-wrap { min-height: 260px; } }
+
+  /* Ajuste para el histograma */
+  .histogram-wrap {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+  }
+  #usoPorHoraChart {
+    width: 100% !important; /* Asegura que el gráfico ocupe todo el espacio disponible */
+    max-width: 100%; /* Evita que el gráfico exceda el contenedor */
+    height: 300px; /* Ajusta el tamaño del gráfico */
+      height: 280px !important;
+  }
+
+   #histogramDiaChart {
+    width: 100% !important; /* Asegura que el gráfico ocupe todo el espacio disponible */
+    max-width: 100%; /* Evita que el gráfico exceda el contenedor */
+    height: 300px; /* Ajusta el tamaño del gráfico */
+      height: 280px !important;
+  }
+
+
+  
+</style>
+
+<div class="container mt-5">
+  <div class="card report-card shadow-lg">
+    <div class="card-header report-header text-center">
+      <h3 class="mb-0">Graficas de Usuarios</h3>
+      <p class="mt-2">Gráficas basadas en los usuarios registrados en el gimnasio.</p>
+    </div>
+
+    <div class="card-body p-4">
+      {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+      {% endif %}
+
+      <div class="d-flex justify-content-end mb-3">
+        <button id="btnRefresh" class="btn btn-sm btn-outline-primary me-2">Actualizar</button>
+      </div>
+
+      <div class="row g-4">
+        <!-- Grafico de Distribución por Tipo -->
+        <div class="col-md-6">
+          <div class="chart-wrap">
+            <div style="width:100%;">
+              <h5 class="fw-bold text-center mb-3">Distribución por tipo (porcentaje)</h5>
+              <canvas id="pieChart" style="max-height:260px;"></canvas>
+              <div id="pieNoData" class="text-center text-muted" style="display:none;">No hay datos para mostrar.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grafico de Conteo por Tipo -->
+        <div class="col-md-6">
+          <div class="chart-wrap">
+            <div style="width:100%;">
+              <h5 class="fw-bold text-center mb-3">Conteo por tipo</h5>
+              <canvas id="barChart" style="max-height:260px;"></canvas>
+              <div id="barNoData" class="text-center text-muted" style="display:none;">No hay datos para mostrar.</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Resumen rápido de usuarios -->
+        <div class="col-12 mt-4">
+          <div class="card p-3 shadow-sm">
+            <h5 class="fw-bold">Resumen rápido de usuarios</h5>
+            <p>Total de usuarios: <strong id="totalUsers">{{ total|default:0 }}</strong></p>
+            <div class="row g-2" id="resumenContainer">
+              {% for r in resumen %}
+                <div class="col-md-4 resumen-item" data-tipo="{{ r.tipo }}">
+                  <div class="p-2 border rounded text-center">
+                    <strong>{{ r.tipo }}</strong>
+                    <div class="text-muted">{{ r.conteo }} usuarios</div>
+                  </div>
+                </div>
+              {% empty %}
+                <div class="col-12 text-center text-muted">No hay datos para mostrar.</div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+
+  <!-- HISTOGRAMA USO DEL GIMNASIO -->
+<div class="col-12 mt-4">
+  <div class="chart-wrap" style="min-height:360px;">
+    <div style="width:100%;">
+      <h5 class="fw-bold text-center mb-3">Uso del Gimnasio</h5>
+      <canvas id="histogramDiaChart"></canvas>
+      <div id="histogramNoData" class="text-center text-muted" style="display:none;">
+        No hay datos para mostrar.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Chart.js (único include) -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+  
+document.addEventListener("DOMContentLoaded", () => {
+  const btn = document.getElementById("btnRefresh");
+
+  if (btn) {
+    btn.click(); 
+  }
+});
+(function () {
+  let labels = [];
+  let dataValues = [];
+  let ingresosLabels = [];
+  let ingresosValues = [];
+
+  try {
+    labels = JSON.parse('{{ labels_json|default:"[]"|escapejs }}');
+    dataValues = JSON.parse('{{ data_json|default:"[]"|escapejs }}').map(v => Number(v) || 0);
+  } catch(e) { labels = []; dataValues = []; }
+
+  try {
+    ingresosLabels = JSON.parse('{{ ingresos_labels_json|default:"[]"|escapejs }}');
+    ingresosValues = JSON.parse('{{ ingresos_values_json|default:"[]"|escapejs }}').map(v => Number(v) || 0);
+  } catch(e) { ingresosLabels = []; ingresosValues = []; }
+
+  const pieCanvas = document.getElementById('pieChart');
+  const barCanvas = document.getElementById('barChart');
+  const histogramCanvas1 = document.getElementById('histogramDiaChart');
+ const histogramCanvas = document.getElementById('usoPorHoraChart');
+
+  const totalEl = document.getElementById('totalUsers');
+  const resumenContainer = document.getElementById('resumenContainer');
+
+  const COLORS = [
+    "hsl(219,57%,24%)",
+    "hsl(219,57%,34%)",
+    "hsl(219,57%,48%)",
+    "hsl(200,60%,40%)",
+    "hsl(260,45%,45%)"
+  ];
+  const BG_COLORS = COLORS.map(c => c.replace('hsl','hsla').replace(')',',0.85)'));
+
+  function renderCharts() {
+    
+    const total = dataValues.reduce((a,b) => a + b, 0);
+
+    if (total === 0) {
+      if (document.getElementById('pieNoData')) document.getElementById('pieNoData').style.display = 'block';
+      if (document.getElementById('barNoData')) document.getElementById('barNoData').style.display = 'block';
+      if (pieCanvas) pieCanvas.style.display = 'none';
+      if (barCanvas) barCanvas.style.display = 'none';
+      if (totalEl) totalEl.textContent = 0;
+      return;
+    } else {
+      if (document.getElementById('pieNoData')) document.getElementById('pieNoData').style.display = 'none';
+      if (document.getElementById('barNoData')) document.getElementById('barNoData').style.display = 'none';
+      if (pieCanvas) pieCanvas.style.display = '';
+      if (barCanvas) barCanvas.style.display = '';
+    }
+
+    if (window._chartPie instanceof Chart) try { window._chartPie.destroy(); } catch(e){}
+    if (window._chartBar instanceof Chart) try { window._chartBar.destroy(); } catch(e){}
+
+    // Pie chart
+    if (pieCanvas) {
+      const pieCtx = pieCanvas.getContext('2d');
+      window._chartPie = new Chart(pieCtx, {
+        type: 'pie',
+        data: {
+          labels: labels.map((l,i) => `${l} (${dataValues[i] ?? 0})`),
+          datasets: [{
+            data: dataValues,
+            backgroundColor: COLORS.slice(0, labels.length),
+            hoverOffset: 8
+          }]
+        },
+        options: { responsive: true, plugins: { legend: { position: 'bottom' } } }
+      });
+    }
+
+    // Bar chart
+    if (barCanvas) {
+      const barCtx = barCanvas.getContext('2d');
+      window._chartBar = new Chart(barCtx, {
+        type: 'bar',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'Usuarios',
+            data: dataValues,
+            backgroundColor: BG_COLORS.slice(0, labels.length),
+            borderColor: COLORS.slice(0, labels.length),
+            borderWidth: 1
+          }]
+        },
+       options: {
+  responsive: true,
+  scales: {
+    x: {
+      ticks: {
+        font: {
+          size: 10   // ⬅️ texto más pequeño
+        },
+        maxRotation: 0,
+        minRotation: 0
+      }
+    },
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0
+      }
+    }
+  },
+  plugins: {
+    legend: { display: false }
+  }
+}
+      });
+      
+
+
+      
+    }
+
+
+
+    // Actualizar total y resumen
+    if (totalEl) totalEl.textContent = total;
+    if (resumenContainer) {
+      while (resumenContainer.firstChild) resumenContainer.removeChild(resumenContainer.firstChild);
+      for (let i = 0; i < labels.length; i++) {
+        const col = document.createElement('div');
+        col.className = 'col-md-4';
+        col.innerHTML = `<div class="p-2 border rounded text-center"><strong>${labels[i]}</strong><div class="text-muted">${dataValues[i]} usuarios</div></div>`;
+        resumenContainer.appendChild(col);
+      }
+    }   
+  }
+
+  async function cargarUsoGimnasio() {
+  try {
+    const resp = await fetch("{% url 'uso_gimnasio_data' %}");
+    const js = await resp.json();
+
+    const labels = js.labels || [];
+    const data = (js.data || []).map(v => Number(v) || 0);
+
+    const canvas = document.getElementById('histogramDiaChart');
+
+    const noData = document.getElementById('histogramNoData');
+
+    if (!canvas) return;
+
+    const total = data.reduce((a,b)=>a+b,0);
+
+    if (total === 0) {
+      canvas.style.display = 'none';
+      if (noData) noData.style.display = 'block';
+      return;
+    }
+
+    canvas.style.display = '';
+    if (noData) noData.style.display = 'none';
+
+    if (window._chartHistogram instanceof Chart) {
+      window._chartHistogram.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    window._chartHistogram = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [{
+          label: 'Entradas al gimnasio',
+          data: data,
+          backgroundColor: 'hsla(219,57%,34%,0.85)',
+          borderColor: 'hsl(219,57%,24%)',
+          borderWidth: 1,
+            barThickness: 40, 
+barThickness: 35,          // ⬅ grosor fijo
+  maxBarThickness: 40,       // ⬅ límite
+  categoryPercentage: 0.6,   // ⬅ reduce espacio horizontal
+  barPercentage: 0.8         // ⬅ barras más juntas
+
+        }]
+      },
+      options: {
+  responsive: true,
+  maintainAspectRatio: false,
+  scales: {
+    y: {
+      beginAtZero: true,
+      ticks: {
+        precision: 0,
+        stepSize: 1           // ⬅ evita saltos grandes
+      }
+    },
+    x: {
+      ticks: {
+        maxRotation: 0,
+        minRotation: 0
+      },
+      grid: {
+        display: false        // ⬅ menos ruido visual
+      }
+    }
+  },
+  plugins: {
+    legend: { display: false },
+    title: {
+      display: true,
+      text: 'Uso Semanal del Gimnasio',
+      align: 'center',
+      font: { size: 16, weight: 'bold' }
+    }
+  }
+}
+
+    });
+
+  } catch (e) {
+    console.error("Error cargando uso del gimnasio:", e);
+  } 
+}
+
+/* =========================
+   USO DEL GIMNASIO POR HORA
+   ========================= */
+async function cargarUsoGimnasioPorHora() {
+  try {
+    const resp = await fetch("{% url 'uso_gimnasio_por_hora_data' %}");
+    const js = await resp.json();
+
+    if (js.error) {
+      console.error(js.error);
+      return;
+    }
+
+    const rawLabels = js.labels || [];
+    const rawData = js.data || [];
+
+    const canvas = document.getElementById('usoPorHoraChart');
+    const noData = document.getElementById('usoPorHoraNoData');
+
+    if (!canvas) return;
+
+    const total = rawData.reduce((a,b)=>a+b,0);
+    if (total === 0) {
+      canvas.style.display = 'none';
+      noData.style.display = 'block';
+      return;
+    }
+
+    canvas.style.display = '';
+    noData.style.display = 'none';
+
+    // Horas fijas
+    const horas = [];
+    for (let h = 8; h <= 23; h++) horas.push(`${h.toString().padStart(2,'0')}:00`);
+
+    const dias = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes"];
+
+    // Inicializar datasets
+    const datasets = dias.map((dia, idx) => ({
+      label: dia,
+      data: Array(horas.length).fill(0),
+      backgroundColor: `hsla(${219 + idx*10},57%,40%,0.8)`
+    }));
+
+    // Reacomodar datos del backend
+    rawLabels.forEach((label, i) => {
+      const [dia, hora] = label.split(" ");
+      const horaIdx = horas.indexOf(hora);
+      const diaIdx = dias.indexOf(dia);
+
+      if (horaIdx !== -1 && diaIdx !== -1) {
+        datasets[diaIdx].data[horaIdx] = rawData[i];
+      }
+    });
+
+    if (window._usoPorHoraChart instanceof Chart) {
+      window._usoPorHoraChart.destroy();
+    }
+
+    const ctx = canvas.getContext('2d');
+    window._usoPorHoraChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: horas,
+        datasets: datasets
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false
+        },
+        scales: {
+          x: {
+            stacked: true
+          },
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            ticks: { precision: 0 }
+          }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom'
+          },
+          title: {
+            display: true,
+            text: 'Entradas al gimnasio por hora (Lunes a Viernes)'
+          }
+        }
+      }
+    });
+
+  } catch (e) {
+    console.error("Error cargando uso por hora:", e);
+  }
+}
+
+
+  // Render inicial
+  renderCharts();
+  cargarUsoGimnasio();
+cargarUsoGimnasioPorHora();
+
+  // Botón para actualizar los gráficos
+  const btnRefresh = document.getElementById('btnRefresh');
+  if (btnRefresh) {
+    btnRefresh.addEventListener('click', async () => {
+      try {
+        const resp = await fetch("{% url 'reportes_data' %}");
+        const js = await resp.json();
+        if (js.error) { alert("Error: " + js.error); return; }
+        labels = js.labels || [];
+        dataValues = (js.data || []).map(v => Number(v) || 0);
+       ingresosLabels = js.ingresos_labels_json
+  ? JSON.parse(js.ingresos_labels_json)
+  : [];
+
+ingresosValues = js.ingresos_values_json
+  ? JSON.parse(js.ingresos_values_json).map(v => Number(v) || 0)
+  : [];
+
+        renderCharts();
+        cargarUsoGimnasio();
+        cargarUsoGimnasioPorHora();
+
+      } catch (e) {
+        alert("No se pudo actualizar: " + e.message);
+      }
+
+
+    });
+ 
+  }
+})();
+document.getElementById("diaSelect")
+  .addEventListener("change", cargarUsoGimnasioPorHora);
+
+// carga inicial
+cargarUsoGimnasioPorHora();
+
+
+
+</script>
+
+{% endblock %}

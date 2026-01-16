@@ -1,0 +1,305 @@
+{% extends 'gym/base.html' %}
+{% load static bootstrap5 %}
+
+{% block title %}Administradores | Gimnasio{% endblock %}
+
+{% block content %}
+
+<div class="container py-5">
+  <div class="row justify-content-center">
+    <div class="col-md-10 col-lg-8">
+      <div class="card shadow-lg border-0">
+        <div class="card-header fondo text-white text-center">         
+          <h4 class="mb-0">Gestión de Administradores</h4>
+        </div>
+{% if messages %}
+<div class="mt-2">
+  {% for message in messages %}
+ <div class="alert {% if message.tags == 'error' %}alert-danger{% else %}alert-{{ message.tags }}{% endif %} text-center fw-bold">
+      {{ message }}
+    </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+
+        <div class="card-body">
+
+          <!-- BOTONES DEL MENÚ -->
+          <div class="d-flex justify-content-around mb-4">
+            <button class="btn btn-success" id="btn-agregar">Agregar</button>
+            <button class="btn btn-primary" id="btn-buscar">Buscar</button>
+            <button class="btn btn-warning text-white" id="btn-editar">Editar</button>
+            <button class="btn btn-danger" id="btn-eliminar">Eliminar</button>
+          </div>
+
+          <!-- ========================= -->
+          <!--      SECCIÓN AGREGAR      -->
+          <!-- ========================= -->
+          <div id="seccion-agregar">
+            <h5 class="text-center mb-4">Crear Nuevo Administrador</h5>
+
+            {% if error %}
+            <div class="alert alert-danger text-center">{{ error }}</div>
+            {% endif %}
+
+            <form id="formNuevoAdministrador" method="POST" action="{% url 'crear_admin' %}">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label class="form-label">Usuario</label>
+                <input type="text" name="usuario" class="form-control" placeholder="Usuario" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Contraseña</label>
+                <input type="password" name="password" class="form-control" placeholder="Contraseña" required>
+              </div>
+
+              <button type="submit" class="btn w-100 text-white fondo">Crear Administrador</button>
+            </form>
+          </div>
+<!-- ========== SECCIÓN BUSCAR ========== -->
+<div id="seccion-buscar" class="d-none">
+  <h5 class="text-center mb-4">Buscar Administrador</h5>
+
+  {% if error %}
+  <div class="alert alert-danger text-center">{{ error }}</div>
+  {% endif %}
+
+  <form method="GET" action="{% url 'buscar_admin' %}">
+    <div class="row">
+      <div class="col-md-6 mb-3">
+        <input 
+          type="number"
+          class="form-control"
+          name="id_admin"
+          placeholder="Buscar por ID"
+          value="{{ query_id }}"
+        >
+      </div>
+
+      <div class="col-md-6 mb-3">
+        <input 
+          type="text"
+          class="form-control"
+          name="usuario"
+          placeholder="Buscar por usuario"
+          value="{{ query_usuario }}"
+        >
+      </div>
+    </div>
+
+    <button class="btn w-100 text-white fondo">Buscar Administrador</button>
+  </form>
+
+  <!-- RESULTADOS -->
+  {% if resultados %}
+    <h6 class="mt-4 mb-2 text-muted">Resultados:</h6>
+
+
+    <!-- Si solo viene 1 resultado, mostrar DETALLE -->
+    {% if resultados|length == 1 %}
+      <div class="card mt-4">
+        <div class="card-body">
+          <h5 class="mb-1">Usuario: {{ resultados.0.usuario }}</h5>
+          <p class="text-muted mb-0">ID asignado: {{ resultados.0.id_admin }}</p>
+        </div>
+      </div>
+    {% endif %}
+
+  {% elif query_id or query_usuario %}
+    <!-- Si se hizo una búsqueda pero no hubo resultados -->
+    <div class="alert alert-warning text-center mt-4">
+      No se encontraron administradores con esos datos.
+    </div>
+  {% endif %}
+</div>
+
+          <!-- ========================= -->
+          <!--      SECCIÓN EDITAR       -->
+          <!-- ========================= -->
+          <div id="seccion-editar" class="d-none">
+            <h5 class="text-center mb-4">Editar Administrador</h5>
+
+            <form id="formEditarAdmin" method="POST" action="{% url 'editar_admin' %}">
+              {% csrf_token %}
+
+              <div class="mb-3">
+                <label class="form-label">Usuario a editar</label>
+                <input type="text" name="usuario" class="form-control" placeholder="Usuario" required>
+              </div>
+
+              <div class="mb-3">
+                <label class="form-label">Nueva Contraseña</label>
+                <input type="password" name="password" class="form-control" placeholder="Nueva contraseña" required>
+              </div>
+
+              <button class="btn w-100 text-white fondo">Guardar Cambios</button>
+            </form>
+
+            <div id="alerta-editar-admin" class="mt-3"></div>
+          </div>
+
+        <!-- ========================= -->
+<!--      SECCIÓN ELIMINAR     -->
+<!-- ========================= -->
+<div id="seccion-eliminar" class="d-none">
+  <h5 class="text-center mb-4">Eliminar Administrador</h5>
+
+  <form id="formEliminarAdmin" method="POST" action="{% url 'eliminar_admin' %}?section=eliminar">
+    {% csrf_token %}
+
+    <div class="mb-3">
+      <label class="form-label">Usuario a eliminar</label>
+      <input type="text" name="usuario" class="form-control" placeholder="Usuario" required>
+    </div>
+
+    <!-- Botón que abre el modal -->
+    <button 
+      type="button" 
+      class="btn w-100 text-white fondo" 
+      data-bs-toggle="modal" 
+      data-bs-target="#confirmarEliminarModal">
+      Eliminar Administrador
+    </button>
+  </form>
+
+  <div id="alerta-eliminar-admin" class="mt-3"></div>
+</div>
+
+<!-- JS PARA MOSTRAR/OCULTAR SECCIONES -->
+<script>
+  // Referencias a secciones
+  const secciones = {
+    agregar: document.getElementById("seccion-agregar"),
+    buscar: document.getElementById("seccion-buscar"),
+    editar: document.getElementById("seccion-editar"),
+    eliminar: document.getElementById("seccion-eliminar"),
+  };
+
+  // Botones del menú
+  const btnAgregar = document.getElementById("btn-agregar");
+  const btnBuscar = document.getElementById("btn-buscar");
+  const btnEditar = document.getElementById("btn-editar");
+  const btnEliminar = document.getElementById("btn-eliminar");
+  const botones = [btnAgregar, btnBuscar, btnEditar, btnEliminar];
+
+  // Estado de modo eliminar (si se activa al entrar a eliminar)
+  let modoEliminar = false;
+
+  /**
+   * mostrarSolo:
+   *  - id: "agregar" | "buscar" | "editar" | "eliminar"
+   *  - titleText (opcional): texto que se mostrará en el h5 de la sección
+   *  - titleClass (opcional): clase(s) que se asignarán al h5 (por ejemplo "mb-3 text-primary")
+   */
+  function mostrarSolo(id, titleText = null, titleClass = null) {
+    // ocultar todas las secciones
+    Object.values(secciones).forEach(sec => sec.classList.add("d-none"));
+
+    // mostrar la solicitada si existe
+    const target = secciones[id];
+    if (!target) return;
+
+    target.classList.remove("d-none");
+
+    // manejar título interno (si hay un h5 dentro de la sección)
+    const h5 = target.querySelector("h5");
+    if (h5) {
+      if (titleText !== null) h5.textContent = titleText;
+      if (titleClass !== null) h5.className = titleClass;
+    }
+
+    // ocultar detalles/otros elementos que ya no aplican (si existen)
+    const detalleUsuario = document.getElementById("detalle-usuario");
+    if (detalleUsuario) detalleUsuario.classList.add("d-none");
+
+    const resultados = document.querySelectorAll(".resultados, .table, .card.mt-4");
+    resultados.forEach(el => {
+      // si el elemento tiene style, esconderlo; si no, añadir clase d-none
+      if (el.style) el.style.display = "none";
+      el.classList.add("d-none");
+    });
+
+    // resaltar botón activo
+    botones.forEach(b => b.classList.remove("active"));
+    switch (id) {
+      case "agregar": btnAgregar.classList.add("active"); modoEliminar = false; break;
+      case "buscar":  btnBuscar.classList.add("active"); modoEliminar = false; break;
+      case "editar":  btnEditar.classList.add("active"); modoEliminar = false; break;
+      case "eliminar": btnEliminar.classList.add("active"); modoEliminar = true; break;
+    }
+  }
+
+  // Inicial: mostrar sección AGREGAR (la misma que tenías por defecto)
+  mostrarSolo("agregar");
+
+  // Asociar eventos a botones (siguiendo tu ejemplo de textos y colores)
+  btnAgregar.addEventListener("click", () => {
+    mostrarSolo("agregar");
+  });
+
+  btnBuscar.addEventListener("click", () => {
+    mostrarSolo("buscar");
+  });
+
+  btnEditar.addEventListener("click", () => {
+    // reutilizamos la sección buscar para editar, cambiando título y estilo
+    mostrarSolo("editar");
+  });
+
+  btnEliminar.addEventListener("click", () => {
+    // activar el modo eliminar y mostrar la sección eliminar
+    mostrarSolo("eliminar");
+    modoEliminar = true;
+  });
+
+  // (Opcional) si quieres que al cargar la página se muestre la sección buscada cuando hay querys:
+  document.addEventListener("DOMContentLoaded", function () {
+    const qId = "{{ query_id|default:'' }}".trim();
+    const qUsuario = "{{ query_usuario|default:'' }}".trim();
+    if (qId || qUsuario) {
+      // si había una búsqueda previa, mostrar la sección de búsqueda y mantener los valores
+      mostrarSolo("buscar", "Buscar Administrador", "editar", "eliminar", "mb-3 text-primary text-center");
+      // también eliminar el display: none que pudiera haberse aplicado a resultados por el script
+      const resultadosEls = document.querySelectorAll(".resultados, .table, .card.mt-4");
+      resultadosEls.forEach(el => {
+        el.classList.remove("d-none");
+        el.style.display = "";
+      });
+    }
+  });
+</script>
+<script>
+  (function () {
+    // Esperar DOM
+    document.addEventListener("DOMContentLoaded", function () {
+      const btnConfirmar = document.getElementById("btnConfirmarEliminar");
+      const formEliminar = document.getElementById("formEliminarAdmin");
+      const modalEl = document.getElementById("confirmarEliminarModal");
+
+      if (!btnConfirmar || !formEliminar || !modalEl) return;
+
+      btnConfirmar.addEventListener("click", function () {
+        // opcional: validación rápida antes de enviar
+        const usuarioInput = formEliminar.querySelector('input[name="usuario"]');
+        if (!usuarioInput || !usuarioInput.value.trim()) {
+          // Si no hay usuario, mostrar alerta dentro de la sección
+          const alerta = document.getElementById("alerta-eliminar-admin");
+          alerta.innerHTML = '<div class="alert alert-danger">Por favor escribe el nombre de usuario a eliminar.</div>';
+          return;
+        }
+
+        // cerrar modal para mejor UX
+        const modalInstance = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+        modalInstance.hide();
+
+        // enviar el formulario (POST) — CSRF ya está en el form
+        formEliminar.submit();
+      });
+    });
+  })();
+</script>
+
+{% endblock %}

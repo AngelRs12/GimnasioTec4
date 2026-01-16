@@ -1,0 +1,298 @@
+{% load static %}
+{% load bootstrap5 %}
+<link rel="stylesheet" href="{% static 'styles/header.css' %}">
+<link rel="stylesheet" href="{% static 'styles/footer.css' %}">
+
+<!-- Font Awesome -->
+<link rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer">
+
+
+<style>
+  /* Estilos para la barra lateral */
+.sidebar {
+  position: fixed;
+  top: 0;
+  left: 0;
+
+  height: 100vh;
+  width: 220px;
+  background-color: #212529;
+  color: white;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow-y: auto;          /* permite scroll vertical */
+  overflow-x: hidden;        /* evita scroll horizontal */
+
+  scrollbar-width: none;     /* Firefox */
+  -ms-overflow-style: none;  /* Edge antiguo */
+
+  transition: transform 0.3s ease;
+  transform: translateX(-100%);
+  z-index: 1050;
+}
+
+/* Chrome, Edge, Safari */
+.sidebar::-webkit-scrollbar {
+  display: none;
+}
+
+
+  .sidebar.active {
+    transform: translateX(0);
+  }
+
+  .sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background-color: #1a1e21;
+    border-bottom: 1px solid #343a40;
+  }
+
+  .sidebar-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .close-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    font-size: 26px;
+    cursor: pointer;
+  }
+
+  .close-btn:hover {
+    color: #adb5bd;
+  }
+
+  .sidebar a {
+    display: block;
+    color: white;
+    padding: 12px 20px;
+    text-decoration: none;
+    transition: background-color 0.2s;
+  }
+
+  .sidebar a:hover {
+    background-color: #343a40;
+  }
+
+  .sidebar a i {
+    width: 22px;
+    margin-right: 8px;
+    text-align: center;
+  }
+
+  .sidebar-toggle {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 22px;
+    cursor: pointer;
+    margin-right: 10px;
+    
+    .sidebar a.active {
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar a i {
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.sidebar a:hover i {
+  transform: translateX(6px) scale(1.15);
+  color: #0d6efd;
+}
+
+  }
+
+  .sidebar a.active {
+  background-color: #0d6efd;
+  color: #fff;
+  font-weight: 600;
+}
+
+.sidebar a i {
+  transition: transform 0.25s ease, color 0.25s ease;
+}
+
+.sidebar a:hover i {
+  transform: translateX(6px) scale(1.15);
+  color: #0d6efd;
+}
+
+</style>
+
+
+<!-- Navbar -->
+<div class="py-3 head-logos">
+  <div class="d-flex justify-content-center align-items-center flex-wrap gap-5">
+    <img src="{% static 'gym/images/ITCJ logo.png' %}" height="60">
+    <img src="{% static 'gym/images/logo sep.png' %}" height="60">
+    <img src="{% static 'gym/images/LOGO TECNM.png' %}" height="60">
+  </div>
+</div>
+
+<nav class="navbar navbar-expand-lg navbar-dark fondo">
+  <div class="">
+    <button id="sidebarToggle" class="sidebar-toggle">☰</button>
+
+    <img src="{% static 'gym/images/logoPag.png' %}" width="40" height="40"
+         class="me-2 rounded-circle">
+
+    <span class="text-white fs-5 fw-bold">
+      Sistema de Control del Gimnasio del ITCJ
+    </span>
+  </div>
+</nav>
+
+<!-- Barra lateral -->
+<div id="sidebar" class="sidebar">
+
+  <div class="sidebar-header" style="justify-content: space-evenly;">
+    <button id="closeSidebar" class="close-btn">&times;</button>
+
+    {% if request.session.usuario_admin %}
+      <span class="sidebar-title">
+        Bienvenido:<br>{{ request.session.usuario_admin }}
+      </span>
+    {% else %}
+      <span class="sidebar-title">Menú</span>
+    {% endif %}
+  </div>
+
+  {% if request.session.usuario_admin %}
+
+<a href="{% url 'index' %}"
+   class="{% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+  <i class="fa-solid fa-house"></i> Inicio
+</a>
+
+<a href="{% url 'entradas_salidas' %}"
+   class="{% if request.resolver_match.url_name == 'entradas_salidas' %}active{% endif %}">
+  <i class="fa-solid fa-door-open"></i> Entradas y Salidas
+</a>
+
+<a href="{% url 'usuarios' %}"
+   class="{% if request.resolver_match.url_name == 'usuarios' %}active{% endif %}">
+  <i class="fa-solid fa-users"></i> Usuarios
+</a>
+
+<a href="{% url 'membresias' %}"
+   class="{% if request.resolver_match.url_name == 'membresias' %}active{% endif %}">
+  <i class="fa-solid fa-credit-card"></i> Membresías
+</a>
+
+<a href="{% url 'graficas' %}"
+   class="{% if request.resolver_match.url_name == 'graficas' %}active{% endif %}">
+  <i class="fa-solid fa-chart-column"></i> Graficas
+</a>
+
+<a href="{% url 'reportes_exportacion' %}"
+   class="{% if request.resolver_match.url_name == 'reportes_exportacion' %}active{% endif %}">
+  <i class="fa-solid fa-chart-column"></i> Reportes
+</a>
+
+<a href="{% url 'observaciones' %}"
+   class="{% if request.resolver_match.url_name == 'observaciones' %}active{% endif %}">
+  <i class="fa-solid fa-note-sticky"></i> Observaciones
+</a>
+
+<a href="{% url 'administradores' %}"
+   class="{% if request.resolver_match.url_name == 'administradores' %}active{% endif %}">
+  <i class="fa-solid fa-user-shield"></i> Administradores
+</a>
+
+<hr>
+
+<a href="{% url 'reglamento' %}"
+   class="{% if request.resolver_match.url_name == 'reglamento' %}active{% endif %}">
+  <i class="fa-solid fa-file-lines"></i> Reglamento
+</a>
+
+<a href="{% url 'horario' %}"
+   class="{% if request.resolver_match.url_name == 'horario' %}active{% endif %}">
+  <i class="fa-solid fa-clock"></i> Horario
+</a>
+
+<a href="{% url 'entrenadores' %}"
+   class="{% if request.resolver_match.url_name == 'entrenadores' %}active{% endif %}">
+  <i class="fa-solid fa-dumbbell"></i> Entrenadores
+</a>
+
+<a href="{% url 'actividades' %}"
+   class="{% if request.resolver_match.url_name == 'actividades' %}active{% endif %}">
+  <i class="fa-solid fa-person-running"></i> Actividades
+</a>
+
+<a href="{% url 'acercade' %}"
+   class="{% if request.resolver_match.url_name == 'acercade' %}active{% endif %}">
+  <i class="fa-solid fa-circle-info"></i> Acerca de
+</a>
+
+<a href="#" data-bs-toggle="modal" data-bs-target="#logoutModal">
+  <i class="fa-solid fa-right-from-bracket"></i> Cerrar Sesión
+</a>
+
+{% else %}
+
+<a href="{% url 'sesion' %}"
+   class="{% if request.resolver_match.url_name == 'sesion' %}active{% endif %}">
+  <i class="fa-solid fa-plug"></i> Iniciar Sesión
+</a>
+<a href="{% url 'index' %}"
+   class="{% if request.resolver_match.url_name == 'index' %}active{% endif %}">
+  <i class="fa-solid fa-house"></i> Inicio
+</a>
+<a href="{% url 'reglamento' %}"
+   class="{% if request.resolver_match.url_name == 'reglamento' %}active{% endif %}">
+  <i class="fa-solid fa-file-lines"></i> Reglamento
+</a>
+
+<a href="{% url 'horario' %}"
+   class="{% if request.resolver_match.url_name == 'horario' %}active{% endif %}">
+  <i class="fa-solid fa-clock"></i> Horario
+</a>
+
+<a href="{% url 'entrenadores' %}"
+   class="{% if request.resolver_match.url_name == 'entrenadores' %}active{% endif %}">
+  <i class="fa-solid fa-dumbbell"></i> Entrenadores
+</a>
+
+<a href="{% url 'actividades' %}"
+   class="{% if request.resolver_match.url_name == 'actividades' %}active{% endif %}">
+  <i class="fa-solid fa-person-running"></i> Actividades
+</a>
+
+<a href="{% url 'acercade' %}"
+   class="{% if request.resolver_match.url_name == 'acercade' %}active{% endif %}">
+  <i class="fa-solid fa-circle-info"></i> Acerca de
+</a>
+
+
+{% endif %}
+</div>
+
+<script>
+  const sidebar = document.getElementById('sidebar');
+  const toggleButton = document.getElementById('sidebarToggle');
+  const closeButton = document.getElementById('closeSidebar');
+
+  toggleButton.addEventListener('click', () => {
+    sidebar.classList.toggle('active');
+  });
+
+  closeButton.addEventListener('click', () => {
+    sidebar.classList.remove('active');
+  });
+</script>
